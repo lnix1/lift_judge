@@ -15,7 +15,7 @@ const (
         NumSlots   = 10
         SlotSize   = 512 * 1024
         HeaderSize = 128
-        TotalSize  = HeaderSize + (NumSlots * SlotSize)
+        TotalSize  = HeaderSize + (NumSlots * (HeaderSize + SlotSize))
         ShmPath    = "/dev/shm/camera_ring_buffer"
 	
 	StatusEmpty      = 0
@@ -83,7 +83,7 @@ func startServer(mmap []byte) {
 
 			status := mmap[blockStart]
 
-                        if currentIndex != lastSentIndex && status == StatusReady {
+                        if currentIndex != lastSentIndex && (status == StatusReady || status == StatusRaw) {
 				frameLen := binary.LittleEndian.Uint32(mmap[blockStart+4 : blockStart+8])
 
 				jpegStart := blockStart + HeaderSize
@@ -106,7 +106,6 @@ func startServer(mmap []byte) {
 }
 
 func main() {
-        // 1. Setup Shared Memory
         f, err := os.OpenFile(ShmPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
         if err != nil {
                 log.Fatal(err)
@@ -120,10 +119,18 @@ func main() {
                 log.Fatal(err)
         }
 
-        // 2. Start HTTP Server in background
         go startServer(mmap)
 
-        // 3. Configure and Start Camera
+	go func() {
+        	log.Println("Starting C++ Annotator...")
+        	cmdAnnotator := exec.Command("./annotator")
+        	cmdAnnotator.Stdout = os.Stdout
+        	cmdAnnotator.Stderr = os.Stderr
+        	if err := cmdAnnotator.Run(); err != nil {
+            		log.Printf("Annotator error: %v", err)
+        	}
+    	}()
+
         cmd := exec.Command("rpicam-vid",
                 "-t", "0",
                 "--codec", "mjpeg",
