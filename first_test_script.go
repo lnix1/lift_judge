@@ -17,6 +17,11 @@ const (
         HeaderSize = 128
         TotalSize  = HeaderSize + (NumSlots * SlotSize)
         ShmPath    = "/dev/shm/camera_ring_buffer"
+	
+	StatusEmpty      = 0
+	StatusRaw        = 1
+	StatusProcessing = 2
+	StatusReady      = 3
 )
 
 type RingBufferWriter struct {
@@ -39,14 +44,18 @@ func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
                 // Detect End of Image (EOI)
                 if len(w.tempBuf) >= 2 && w.tempBuf[len(w.tempBuf)-2] == 0xFF && w.tempBuf[len(w.tempBuf)-1] == 0xD9 {
                         if len(w.tempBuf) <= SlotSize {
-                                targetSlot := HeaderSize + (w.writeIndex * SlotSize)
+				blockStart := HeaderSize + (w.writeIndex * (HeaderSize + SlotSize))
 
-                                // Copy frame to shared memory
-                                copy(w.data[targetSlot:], w.tempBuf)
+				copy(w.data[blockStart+HeaderSize:], w.tempBuf)
+				
+				// Write the status and length values for the slot
+				w.data[blockStart] = StatusRaw
+				binary.LittleEndian.PutUint32(w.data[blockStart+4:], uint32(len(w.tempBuf)))
 
-                                // Store length in Table of Contents (Starts at byte 4)
-                                lenOffset := 4 + (w.writeIndex * 4)
-                                binary.LittleEndian.PutUint32(w.data[lenOffset:lenOffset+4], uint32(len(w.tempBuf)))
+				// Clear the 40 bytes of joint data (starts at byte 8 of the block)
+				for i := 0; i < 40; i++ {
+					w.data[blockStart+8+i] = 0
+				}
 
                                 // Update current write index (Header byte 0)
                                 w.data[0] = byte(w.writeIndex)
@@ -70,13 +79,15 @@ func startServer(mmap []byte) {
                 for {
                         currentIndex := int(mmap[0])
 
-                        if currentIndex != lastSentIndex {
-                                // Read length from Table of Contents
-                                lenOffset := 4 + (currentIndex * 4)
-                                frameLen := binary.LittleEndian.Uint32(mmap[lenOffset : lenOffset+4])
+			blockStart := HeaderSize + (currentIndex * (HeaderSize + SlotSize))
 
-                                targetSlot := HeaderSize + (currentIndex * SlotSize)
-                                actualJPEG := mmap[targetSlot : targetSlot+int(frameLen)]
+			status := mmap[blockStart]
+
+                        if currentIndex != lastSentIndex && status == StatusReady {
+				frameLen := binary.LittleEndian.Uint32(mmap[blockStart+4 : blockStart+8])
+
+				jpegStart := blockStart + HeaderSize
+				actualJPEG := mmap[jpegStart : jpegStart+int(frameLen)]
 
                                 // Stream to browser
                                 fmt.Fprintf(w, "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", frameLen)
