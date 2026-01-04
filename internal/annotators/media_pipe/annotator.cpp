@@ -33,7 +33,7 @@ int main() {
 
     // 2. Initialize MediaPipe Pose Landmarker
     auto options = std::make_unique<PoseLandmarkerOptions>();
-    options->base_options.model_asset_path = "pose_landmarker_lite.task";
+    options->base_options.model_asset_path = "internal/annotators/media_pipe/pose_landmarker_lite.task";
     
     // Explicitly using the full namespace to resolve the "not declared" error
     options->running_mode = mediapipe::tasks::vision::core::RunningMode::VIDEO;
@@ -71,11 +71,6 @@ int main() {
                     mediapipe::ImageFormat::SRGB, frame.cols, frame.rows,
                     mediapipe::ImageFrame::kDefaultAlignmentBoundary);
                 
-                // Copy OpenCV BGR to MediaPipe RGB
-		cv::Mat bgr_channels[3];
-		cv::split(frame, bgr_channels);
-		cv::Mat rgb_channels[3] = {bgr_channels[2], bgr_channels[1], bgr_channels[0]};
-		cv::merge(rgb_channels, 3, frame); 
 		frame.copyTo(mediapipe::formats::MatView(image_frame.get()));
 
                 mediapipe::Image mp_image(std::move(image_frame));
