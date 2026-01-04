@@ -28,7 +28,7 @@ int main() {
 
     // 2. Load the Model
     // Place your yolov8n-pose.onnx in a 'models' folder
-    cv::dnn::Net net = cv::dnn::readNetFromONNX("models/yolov8n-pose.onnx");
+    cv::dnn::Net net = cv::dnn::readNetFromONNX("./internal/annotators/yolov8/yolov8n-pose.onnx");
     net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
     net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU); // Change to DNN_TARGET_TIMVX for Pi AI Kit
 

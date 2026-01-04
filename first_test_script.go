@@ -123,7 +123,8 @@ func main() {
 
 	go func() {
         	log.Println("Starting C++ Annotator...")
-        	cmdAnnotator := exec.Command("./annotator")
+        	//cmdAnnotator := exec.Command("./internal/annotators/yolov8/annotator")
+        	cmdAnnotator := exec.Command("./internal/annotators/media_pipe/annotator")
         	cmdAnnotator.Stdout = os.Stdout
         	cmdAnnotator.Stderr = os.Stderr
         	if err := cmdAnnotator.Run(); err != nil {
@@ -136,7 +137,7 @@ func main() {
                 "--codec", "mjpeg",
                 "--width", "640",
                 "--height", "640",
-                "--framerate", "30",
+                "--framerate", "15",
                 "--nopreview",
                 "-o", "-",
         )
