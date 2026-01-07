@@ -6,9 +6,9 @@ import (
         "os/exec"
         "syscall"
 
-	constants "github.com/lnix1/constants"
-	server "github.com/lnix1/server"
-	video "github.com/lnix1/video_feed"
+	constants "github.com/lnix1/lift_judge/internal/constants"
+	server "github.com/lnix1/lift_judge/internal/server"
+	video "github.com/lnix1/lift_judge/internal/video_feed"
 )
 
 func main() {
@@ -48,7 +48,7 @@ func main() {
                 "-o", "-",
         )
 
-        writer := &video_feed.RingBufferWriter{
+        writer := &video.RingBufferWriter{
                 Data:    mmap,
                 TempBuf: make([]byte, 0, constants.SlotSize),
         }

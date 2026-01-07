@@ -7,7 +7,7 @@ import (
 	"time"
         "encoding/binary"
 	
-	constants "github.com/lnix1/constants"
+	constants "github.com/lnix1/lift_judge/internal/constants"
 )
 
 func StartServer(mmap []byte) {
@@ -21,7 +21,7 @@ func StartServer(mmap []byte) {
                 for {
                         currentIndex := int(mmap[0])
 
-			blockStart := constants.HeaderSize + (constants.currentIndex * (constants.HeaderSize + constants.SlotSize))
+			blockStart := constants.HeaderSize + (currentIndex * (constants.HeaderSize + constants.SlotSize))
 
 			status := mmap[blockStart]
 
