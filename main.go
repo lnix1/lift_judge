@@ -12,7 +12,7 @@ import (
 	video "github.com/lnix1/lift_judge/internal/video_feed"
 )
 
-func openSharedSystemMemory(size int, shmPath string) ([]byte, err error) {
+func openSharedSystemMemory(size int, shmPath string) (mmap []byte, err error) {
         f, err := os.OpenFile(shmPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
         if err != nil {
                 log.Fatal(err)
