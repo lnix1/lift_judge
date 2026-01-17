@@ -6,6 +6,7 @@ import (
         "os/exec"
         "syscall"
 	"strconv"
+	"fmt"
 
 	constants "github.com/lnix1/lift_judge/internal/constants"
 	server "github.com/lnix1/lift_judge/internal/server"
@@ -48,7 +49,14 @@ func main() {
 	go func() {
         	log.Println("Starting C++ Annotator...")
         	//cmdAnnotator := exec.Command("./internal/annotators/yolov8/annotator")
-        	cmdAnnotator := exec.Command("./internal/annotators/media_pipe/annotator", strconv.Itoa(constants.NumSlots), "1")
+        	cmdAnnotator := exec.Command("./internal/annotators/media_pipe/annotator", 
+			fmt.Sprintf("--headersize=%d", constants.HeaderSize), 
+			fmt.Sprintf("--slotsize=%d", constants.SlotSize), 
+			fmt.Sprintf("--numslots=%d", constants.NumSlots), 
+			fmt.Sprintf("--detectionconfidence=%f", constants.DetectionConfidence), 
+			fmt.Sprintf("--isring=%t", true), 
+			fmt.Sprintf("--shmpath=%s", constants.ShmPathCpp), 
+		)
         	cmdAnnotator.Stdout = os.Stdout
         	cmdAnnotator.Stderr = os.Stderr
         	if err := cmdAnnotator.Run(); err != nil {

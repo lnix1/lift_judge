@@ -11,49 +11,44 @@
 #include "mediapipe/framework/formats/image_frame.h"
 #include "mediapipe/framework/formats/image_frame_opencv.h"
 
+// Macros for parse arguments
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+
 // Namespaces for clarity
 using namespace mediapipe::tasks::vision::pose_landmarker;
 using namespace mediapipe::tasks::core;
 using namespace mediapipe::tasks::vision::core; // For RunningMode
 
-//const int NUM_SLOTS = 10;
-int NUM_SLOTS;
-const int SLOT_SIZE = 512 * 1024;
-const int HEADER_SIZE = 128;
-//const int TOTAL_SIZE = HEADER_SIZE + (NUM_SLOTS * (HEADER_SIZE + SLOT_SIZE));
-int TOTAL_SIZE;
+ABSL_FLAG(int, headersize, 0, "Size of the shared memory header");
+ABSL_FLAG(int, slotsize, 0, "Size of the slots allocaated in shared memory for a single frame");
+ABSL_FLAG(int, numslots, 0, "Size of the slots allocaated in shared memory for a single frame");
+ABSL_FLAG(float, detectionconfidence, 0, "Min confidence required to plot a joint detection");
+ABSL_FLAG(bool, isring, false, "Indicates whether this is a continuous process or annotation of a single recorded video");
+ABSL_FLAG(std::string, shmpath, "", "Path to the shared memory block");
 
 // MediaPipe Landmark Indices (0-32) mapped to your SHM order
 // order: L_Knee, R_Knee, L_Hip, R_Hip, L_Shoulder, R_Shoulder, L_Elbow, R_Elbow, L_Wrist, R_Wrist
 const int MP_MAP[10] = {25, 26, 23, 24, 11, 12, 13, 14, 15, 16};
 
 int main(int argc, char* argv[]) {
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <number> & <number>" << std::endl;
+    absl::ParseCommandLine(argc, argv);
+
+    int HEADER_SIZE = absl::GetFlag(FLAGS_headersize);
+    int SLOT_SIZE = absl::GetFlag(FLAGS_slotsize);
+    int NUM_SLOTS = absl::GetFlag(FLAGS_numslots);
+    float DETECTION_CONFIDENCE = absl::GetFlag(FLAGS_detectionconfidence);
+    bool IS_RING = absl::GetFlag(FLAGS_isring);
+    std::string shm_path = absl::GetFlag(FLAGS_shmpath);
+    int TOTAL_SIZE = HEADER_SIZE * IS_RING + (NUM_SLOTS * (HEADER_SIZE + SLOT_SIZE));
+
+    if (argc < 7) {
+        std::cerr << "Missing configuration arguments" << std::endl;
         return 1;
-    }
-
-    int num_slots_arg;
-    int loop_bool_arg;
-    try {
-        num_slots_arg = std::stoi(argv[1]);
-        loop_bool_arg = std::stoi(argv[2]);
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Invalid input: Argument must be an integer." << std::endl;
-        return 1;
-    }
-
-    NUM_SLOTS = num_slots_arg;
-
-    if (loop_bool_arg == 1) {
-	TOTAL_SIZE = HEADER_SIZE + (NUM_SLOTS * (HEADER_SIZE + SLOT_SIZE));
-    } else { 
-	TOTAL_SIZE = (NUM_SLOTS * (HEADER_SIZE + SLOT_SIZE));
     }
 
     // 1. Map the Shared Memory
-    int fd = shm_open("/camera_ring_buffer", O_RDWR, 0666);
+    int fd = shm_open(shm_path.c_str(), O_RDWR, 0666);
     if (fd < 0) { std::cerr << "SHM Open failed\n"; return 1; }
     uint8_t* ptr = (uint8_t*)mmap(NULL, TOTAL_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
@@ -63,7 +58,7 @@ int main(int argc, char* argv[]) {
     
     // Explicitly using the full namespace to resolve the "not declared" error
     options->running_mode = mediapipe::tasks::vision::core::RunningMode::VIDEO;
-    options->min_pose_detection_confidence = 0.5f;
+    options->min_pose_detection_confidence = DETECTION_CONFIDENCE;
 
     auto landmarker_res = PoseLandmarker::Create(std::move(options));
     if (!landmarker_res.ok()) {
@@ -79,7 +74,7 @@ int main(int argc, char* argv[]) {
     bool loop_arg = true;
     while (loop_arg) {
         for (int i = 0; i < NUM_SLOTS; i++) {
-            uint8_t* block_ptr = ptr + HEADER_SIZE + (i * (HEADER_SIZE + SLOT_SIZE));
+            uint8_t* block_ptr = ptr + (HEADER_SIZE * IS_RING) + (i * (HEADER_SIZE + SLOT_SIZE));
             uint8_t* status = block_ptr;
 
             if (*status == 1) { // StatusRaw
@@ -132,7 +127,7 @@ int main(int argc, char* argv[]) {
                 *status = 3; // StatusReady
             }
         }
-	if (loop_bool_arg != 1 ) { loop_arg = false; }
+	if (IS_RING != true ) { loop_arg = false; }
         usleep(1000); 
     }
 }

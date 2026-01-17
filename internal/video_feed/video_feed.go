@@ -4,6 +4,7 @@ import (
         "encoding/binary"
         "os/exec"
 	"fmt"
+	"log"
 
 	constants "github.com/lnix1/lift_judge/internal/constants"
 )
@@ -71,12 +72,17 @@ func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
 }
 
 func (writer *RingBufferWriter) WriteRecordingToDisk() error {
+        log.Println("Starting to write recording to disk...")
 	cmd := exec.Command("ffmpeg",
 		"-y",                 
 		"-f", "mjpeg",        
 		"-r", fmt.Sprintf("%d", constants.FramesPerSecond),
 		"-i", "pipe:0",       
-		"-c:v", "copy",       
+		//"-c:v", "copy",       
+		"-c:v", "libx264",        // Use the H.264 encoder
+    		"-pix_fmt", "yuv420p",    // Crucial for Windows/Mobile compatibility
+    		"-preset", "ultrafast",   // Fast encoding for the Raspberry Pi
+    		"-crf", "23",             // Quality level (18-28 is standard; lower is better)
 		"videos/tmp.mp4",
 	)
 
@@ -89,7 +95,7 @@ func (writer *RingBufferWriter) WriteRecordingToDisk() error {
 	}
 
 	for i := 0; i <= writer.RecordWriteIndex; i++ {
-		blockStart := writer.RecordWriteIndex * (constants.HeaderSize + constants.SlotSize)
+		blockStart := i * (constants.HeaderSize + constants.SlotSize)
 		imgLengthBytes := writer.RecordedData[blockStart+4 : blockStart+8]
 		imgLength := binary.LittleEndian.Uint32(imgLengthBytes)
 
