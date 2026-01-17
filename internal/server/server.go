@@ -4,45 +4,51 @@ import (
 	"net/http"
 	"log"
 	"fmt"
-	"time"
-        "encoding/binary"
+	"net"
 	
-	constants "github.com/lnix1/lift_judge/internal/constants"
+	video "github.com/lnix1/lift_judge/internal/video_feed"
 )
 
-func StartServer(mmap []byte) {
-        http.HandleFunc("/video_feed", func(w http.ResponseWriter, r *http.Request) {
-                w.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
-                w.Header().Set("Cache-Control", "no-cache")
-                w.Header().Set("Connection", "keep-alive")
+func getWlanIP() (string, error) {
+	iface, err := net.InterfaceByName("wlan0")
+	if err != nil {
+		return "", err
+	}
 
-                lastSentIndex := -1
+	addrs, err := iface.Addrs()
+	if err != nil {
+		return "", err
+	}
 
-                for {
-                        currentIndex := int(mmap[0])
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
 
-			blockStart := constants.HeaderSize + (currentIndex * (constants.HeaderSize + constants.SlotSize))
+	return "", fmt.Errorf("no IPv4 address found for wlan0")
+}
 
-			status := mmap[blockStart]
+func StartServer(writer *video.RingBufferWriter) {
+	const port = "8080"
 
-                        if currentIndex != lastSentIndex && (status == constants.StatusReady || status == constants.StatusRaw) {
-				frameLen := binary.LittleEndian.Uint32(mmap[blockStart+4 : blockStart+8])
+	mux := http.NewServeMux()
+        mux.HandleFunc("GET /video_feed", writer.HandlerVideoFeed)
+	mux.HandleFunc("POST /start_recording", writer.HandlerStartRecording)
+	mux.HandleFunc("POST /stop_recording", writer.HandlerStopRecording)
 
-				jpegStart := blockStart + constants.HeaderSize
-				actualJPEG := mmap[jpegStart : jpegStart+int(frameLen)]
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
+	}
 
-                                // Stream to browser
-                                fmt.Fprintf(w, "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", frameLen)
-                                w.Write(actualJPEG)
-                                fmt.Fprintf(w, "\r\n")
+	lanAddr, err := getWlanIP()
+	if err != nil {
+		log.Fatal("error getting address to which users will route API calls")
+	}
 
-                                lastSentIndex = currentIndex
-                        }
-                        time.Sleep(10 * time.Millisecond)
-                }
-        })
-
-
-        log.Println("HTTP Server starting on http://0.0.0.0:8080/video_feed")
-        http.ListenAndServe(":8080", nil)
+        log.Println(fmt.Sprintf("HTTP Server starting on http://%s:8080/video_feed", lanAddr))
+	log.Fatal(srv.ListenAndServe())
 }

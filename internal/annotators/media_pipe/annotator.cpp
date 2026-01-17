@@ -16,16 +16,42 @@ using namespace mediapipe::tasks::vision::pose_landmarker;
 using namespace mediapipe::tasks::core;
 using namespace mediapipe::tasks::vision::core; // For RunningMode
 
-const int NUM_SLOTS = 10;
+//const int NUM_SLOTS = 10;
+int NUM_SLOTS;
 const int SLOT_SIZE = 512 * 1024;
 const int HEADER_SIZE = 128;
-const int TOTAL_SIZE = HEADER_SIZE + (NUM_SLOTS * (HEADER_SIZE + SLOT_SIZE));
+//const int TOTAL_SIZE = HEADER_SIZE + (NUM_SLOTS * (HEADER_SIZE + SLOT_SIZE));
+int TOTAL_SIZE;
 
 // MediaPipe Landmark Indices (0-32) mapped to your SHM order
 // order: L_Knee, R_Knee, L_Hip, R_Hip, L_Shoulder, R_Shoulder, L_Elbow, R_Elbow, L_Wrist, R_Wrist
 const int MP_MAP[10] = {25, 26, 23, 24, 11, 12, 13, 14, 15, 16};
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " <number> & <number>" << std::endl;
+        return 1;
+    }
+
+    int num_slots_arg;
+    int loop_bool_arg;
+    try {
+        num_slots_arg = std::stoi(argv[1]);
+        loop_bool_arg = std::stoi(argv[2]);
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Invalid input: Argument must be an integer." << std::endl;
+        return 1;
+    }
+
+    NUM_SLOTS = num_slots_arg;
+
+    if (loop_bool_arg == 1) {
+	TOTAL_SIZE = HEADER_SIZE + (NUM_SLOTS * (HEADER_SIZE + SLOT_SIZE));
+    } else { 
+	TOTAL_SIZE = (NUM_SLOTS * (HEADER_SIZE + SLOT_SIZE));
+    }
+
     // 1. Map the Shared Memory
     int fd = shm_open("/camera_ring_buffer", O_RDWR, 0666);
     if (fd < 0) { std::cerr << "SHM Open failed\n"; return 1; }
@@ -50,7 +76,8 @@ int main() {
 
     uint64_t timestamp_ms = 0;
 
-    while (true) {
+    bool loop_arg = true;
+    while (loop_arg) {
         for (int i = 0; i < NUM_SLOTS; i++) {
             uint8_t* block_ptr = ptr + HEADER_SIZE + (i * (HEADER_SIZE + SLOT_SIZE));
             uint8_t* status = block_ptr;
@@ -105,6 +132,7 @@ int main() {
                 *status = 3; // StatusReady
             }
         }
+	if (loop_bool_arg != 1 ) { loop_arg = false; }
         usleep(1000); 
     }
 }

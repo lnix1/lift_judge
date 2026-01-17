@@ -2,14 +2,19 @@ package video_feed
 
 import (
         "encoding/binary"
+        "os/exec"
+	"fmt"
 
 	constants "github.com/lnix1/lift_judge/internal/constants"
 )
 
 type RingBufferWriter struct {
-        Data       []byte
-        TempBuf    []byte
-        WriteIndex int
+        Data       	 []byte
+        TempBuf    	 []byte
+        WriteIndex 	 int
+	RecordFlag 	 bool
+	RecordWriteIndex int
+	RecordedData	 []byte
 }
 
 func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
@@ -27,6 +32,21 @@ func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
                 if len(w.TempBuf) >= 2 && w.TempBuf[len(w.TempBuf)-2] == 0xFF && w.TempBuf[len(w.TempBuf)-1] == 0xD9 {
                         if len(w.TempBuf) <= constants.SlotSize {
 				blockStart := constants.HeaderSize + (w.WriteIndex * (constants.HeaderSize + constants.SlotSize))
+				
+				// Sort of hacky way to record frames, but will miss last 10 frames when a users stops the recording.
+				// Not a problem if we have a small wait when the record is ended or if record is ended with some space after 
+				// the lift
+				if w.RecordFlag == true && w.RecordWriteIndex < constants.MaxRecordedFrames {
+					imgLengthBytes := w.Data[blockStart+4 : blockStart+8]
+					imgLength := binary.LittleEndian.Uint32(imgLengthBytes)
+					imgBlockEnd := blockStart + constants.HeaderSize + int(imgLength)
+
+					recordedBlockStart := w.RecordWriteIndex * (constants.HeaderSize + constants.SlotSize)
+
+					copy(w.RecordedData[recordedBlockStart : ], w.Data[blockStart : imgBlockEnd])
+
+					w.RecordWriteIndex = w.RecordWriteIndex + 1
+				}
 
 				copy(w.Data[blockStart + constants.HeaderSize:], w.TempBuf)
 				
@@ -48,4 +68,40 @@ func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
                 }
         }
         return len(p), nil
+}
+
+func (writer *RingBufferWriter) WriteRecordingToDisk() error {
+	cmd := exec.Command("ffmpeg",
+		"-y",                 
+		"-f", "mjpeg",        
+		"-r", fmt.Sprintf("%d", constants.FramesPerSecond),
+		"-i", "pipe:0",       
+		"-c:v", "copy",       
+		"videos/tmp.mp4",
+	)
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	for i := 0; i <= writer.RecordWriteIndex; i++ {
+		blockStart := writer.RecordWriteIndex * (constants.HeaderSize + constants.SlotSize)
+		imgLengthBytes := writer.RecordedData[blockStart+4 : blockStart+8]
+		imgLength := binary.LittleEndian.Uint32(imgLengthBytes)
+
+		start := blockStart + constants.HeaderSize
+		end := start + int(imgLength)
+		
+		_, err := stdin.Write(writer.RecordedData[start:end])
+		if err != nil {
+			return fmt.Errorf("failed to write frame %d: %v", i, err)
+		}
+	}
+
+	stdin.Close()
+	return cmd.Wait()
 }
