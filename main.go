@@ -28,6 +28,10 @@ func openSharedSystemMemory(size int, shmPath string) (mmap []byte, err error) {
 
 
 func main() {
+	if constants.NumSlots > 255 {
+		log.Fatal("Too many slots in ring buffer, must be <= 255")
+	}
+
         ringBuffer, err := openSharedSystemMemory(constants.TotalSize, constants.ShmPath)
         if err != nil {
                 log.Fatal(err)

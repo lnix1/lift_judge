@@ -34,9 +34,6 @@ func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
                         if len(w.TempBuf) <= constants.SlotSize {
 				blockStart := constants.HeaderSize + (w.WriteIndex * (constants.HeaderSize + constants.SlotSize))
 				
-				// Sort of hacky way to record frames, but will miss last 10 frames when a users stops the recording.
-				// Not a problem if we have a small wait when the record is ended or if record is ended with some space after 
-				// the lift
 				if w.RecordFlag == true && w.RecordWriteIndex < constants.MaxRecordedFrames {
 					imgLengthBytes := w.Data[blockStart+4 : blockStart+8]
 					imgLength := binary.LittleEndian.Uint32(imgLengthBytes)

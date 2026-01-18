@@ -3,7 +3,7 @@ package constants
 const (
 	DetectionConfidence = 0.5
 
-        NumSlots   = 10
+        NumSlots   = 30
         SlotSize   = 512 * 1024
         HeaderSize = 128
         TotalSize  = HeaderSize + (NumSlots * (HeaderSize + SlotSize))
