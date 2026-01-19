@@ -16,6 +16,7 @@ type RingBufferWriter struct {
 	RecordFlag 	 bool
 	RecordWriteIndex int
 	RecordedData	 []byte
+	AnnotatorTrigger *Semaphore
 }
 
 func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
@@ -61,6 +62,12 @@ func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
                                 w.Data[0] = byte(w.WriteIndex)
 
                                 w.WriteIndex = (w.WriteIndex + 1) % constants.NumSlots
+				
+				// Let annotator know another frame is ready
+				err := w.AnnotatorTrigger.Post()
+				if err != nil {
+					return len(p), fmt.Errorf("sem_post error: %v", err)
+				}
                         }
                         w.TempBuf = w.TempBuf[:0]
                 }
@@ -91,7 +98,7 @@ func (writer *RingBufferWriter) WriteRecordingToDisk() error {
 		return err
 	}
 
-	for i := 0; i <= writer.RecordWriteIndex; i++ {
+	for i := 0; i < writer.RecordWriteIndex; i++ {
 		blockStart := i * (constants.HeaderSize + constants.SlotSize)
 		imgLengthBytes := writer.RecordedData[blockStart+4 : blockStart+8]
 		imgLength := binary.LittleEndian.Uint32(imgLengthBytes)

@@ -22,6 +22,13 @@ func (writer *RingBufferWriter) HandlerVideoFeed(w http.ResponseWriter, r *http.
 
         for {
                 currentIndex := int(writer.Data[0])
+		if currentIndex == 0 {
+			currentIndex = constants.NumSlots - 2
+		} else if currentIndex == 1 {
+			currentIndex = constants.NumSlots - 1
+		} else {
+			currentIndex = currentIndex - 2
+		}
 
 		blockStart := constants.HeaderSize + (currentIndex * (constants.HeaderSize + constants.SlotSize))
 

@@ -41,11 +41,18 @@ func main() {
         if err != nil {
                 log.Fatal(err)
         }
+
+	annotatorTrigger, err := video.NewSemaphore(constants.AnnotationTriggerSem)
+        if err != nil {
+                log.Fatal(err)
+        }
+	defer annotatorTrigger.Close()
         
 	writer := &video.RingBufferWriter{
                 Data:    ringBuffer,
                 TempBuf: make([]byte, 0, constants.SlotSize),
 		RecordedData: recordingBuffer,
+		AnnotatorTrigger: annotatorTrigger,
         }
 
         go server.StartServer(writer)
@@ -60,6 +67,7 @@ func main() {
 			fmt.Sprintf("--detectionconfidence=%f", constants.DetectionConfidence), 
 			fmt.Sprintf("--isring=%t", true), 
 			fmt.Sprintf("--shmpath=%s", constants.ShmPathCpp), 
+			fmt.Sprintf("--sempath=%s", constants.AnnotationTriggerSem), 
 		)
         	cmdAnnotator.Stdout = os.Stdout
         	cmdAnnotator.Stderr = os.Stderr
@@ -79,7 +87,7 @@ func main() {
         )
 
         cmd.Stdout = writer
-        cmd.Stderr = os.Stderr
+        //cmd.Stderr = os.Stderr
 
         log.Println("Starting camera process...")
         if err := cmd.Run(); err != nil {

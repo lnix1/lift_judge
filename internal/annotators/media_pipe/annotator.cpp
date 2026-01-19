@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <iostream>
 #include <vector>
+#include <fcntl.h>
+#include <semaphore.h>
 
 // MediaPipe Task Headers
 #include "mediapipe/tasks/cc/vision/pose_landmarker/pose_landmarker.h"
@@ -26,6 +28,7 @@ ABSL_FLAG(int, numslots, 0, "Size of the slots allocaated in shared memory for a
 ABSL_FLAG(float, detectionconfidence, 0, "Min confidence required to plot a joint detection");
 ABSL_FLAG(bool, isring, false, "Indicates whether this is a continuous process or annotation of a single recorded video");
 ABSL_FLAG(std::string, shmpath, "", "Path to the shared memory block");
+ABSL_FLAG(std::string, sempath, "", "Path to the semaphore used to trigger annotations in the ring buffer");
 
 // MediaPipe Landmark Indices (0-32) mapped to your SHM order
 // order: L_Knee, R_Knee, L_Hip, R_Hip, L_Shoulder, R_Shoulder, L_Elbow, R_Elbow, L_Wrist, R_Wrist
@@ -52,6 +55,7 @@ int main(int argc, char* argv[]) {
     if (fd < 0) { std::cerr << "SHM Open failed\n"; return 1; }
     uint8_t* ptr = (uint8_t*)mmap(NULL, TOTAL_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
+
     // 2. Initialize MediaPipe Pose Landmarker
     auto options = std::make_unique<PoseLandmarkerOptions>();
     options->base_options.model_asset_path = "internal/annotators/media_pipe/pose_landmarker_lite.task";
@@ -72,10 +76,23 @@ int main(int argc, char* argv[]) {
     uint64_t timestamp_ms = 0;
 
     if (IS_RING == true) {
-    	while (true) {
-            uint8_t write_index = *ptr;
+        // Map the semaphore
+        std::string sem_path = absl::GetFlag(FLAGS_sempath);
+        sem_t* sem = sem_open(sem_path.c_str(), O_CREAT, 0666, 0);
+        if (sem == SEM_FAILED) {
+            perror("sem_open");
+            return 1;
+        }
 
-            uint8_t* block_ptr = ptr + (HEADER_SIZE * IS_RING) + (write_index * (HEADER_SIZE + SLOT_SIZE));
+    	while (true) {
+	    sem_wait(sem);
+
+	    while (sem_trywait(sem) == 0) {};
+
+            uint8_t write_index = *ptr;
+	    int target_index = (write_index == 0) ? (NUM_SLOTS - 1) : (write_index - 1);
+
+            uint8_t* block_ptr = ptr + (HEADER_SIZE * IS_RING) + (target_index * (HEADER_SIZE + SLOT_SIZE));
             uint8_t* status = block_ptr;
 
             if (*status == 1) { // StatusRaw
@@ -127,8 +144,8 @@ int main(int argc, char* argv[]) {
 
                 *status = 3; // StatusReady
             }
-        }
         usleep(1000); 
+        }
     } else {
 	for (int i = 0; i < NUM_SLOTS; i++) {
             uint8_t* block_ptr = ptr + (HEADER_SIZE * IS_RING) + (i * (HEADER_SIZE + SLOT_SIZE));
