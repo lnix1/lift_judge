@@ -21,33 +21,32 @@ func (writer *RingBufferWriter) HandlerVideoFeed(w http.ResponseWriter, r *http.
         lastSentIndex := -1
 
         for {
-                currentIndex := int(writer.Data[0])
-		if currentIndex == 0 {
-			currentIndex = constants.NumSlots - 2
-		} else if currentIndex == 1 {
-			currentIndex = constants.NumSlots - 1
-		} else {
-			currentIndex = currentIndex - 2
-		}
+            currentIndex := int(writer.Data[0])
+			switch currentIndex:
+			case 0:
+				currentIndex = constants.NumSlots - 2
+			case 1:
+				currentIndex = constants.NumSlots -1
+			default:
+				currentIndex = currentIndex - 2
 
-		blockStart := constants.HeaderSize + (currentIndex * (constants.HeaderSize + constants.SlotSize))
+			blockStart := constants.HeaderSize + (currentIndex * (constants.HeaderSize + constants.SlotSize))
 
-		status := writer.Data[blockStart]
+			status := writer.Data[blockStart]
 
-                if currentIndex != lastSentIndex && (status == constants.StatusReady || status == constants.StatusRaw) {
-			frameLen := binary.LittleEndian.Uint32(writer.Data[blockStart+4 : blockStart+8])
+            if currentIndex != lastSentIndex && (status == constants.StatusReady || status == constants.StatusRaw) {
+				frameLen := binary.LittleEndian.Uint32(writer.Data[blockStart+4 : blockStart+8])
 
-			jpegStart := blockStart + constants.HeaderSize
-			actualJPEG := writer.Data[jpegStart : jpegStart+int(frameLen)]
+				jpegStart := blockStart + constants.HeaderSize
+				actualJPEG := writer.Data[jpegStart : jpegStart+int(frameLen)]
 
-                        // Stream to browser
-                        fmt.Fprintf(w, "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", frameLen)
-                        w.Write(actualJPEG)
-                        fmt.Fprintf(w, "\r\n")
+                fmt.Fprintf(w, "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", frameLen)
+                w.Write(actualJPEG)
+                fmt.Fprintf(w, "\r\n")
 
-                        lastSentIndex = currentIndex
-                }
-                time.Sleep(10 * time.Millisecond)
+                lastSentIndex = currentIndex
+            }
+            time.Sleep(10 * time.Millisecond)
         }
 }
 
@@ -55,6 +54,9 @@ func (writer *RingBufferWriter) HandlerStartRecording(w http.ResponseWriter, r *
 	clear(writer.RecordedData)
 	writer.RecordWriteIndex = 0
 	writer.RecordFlag = true
+	
+	respondWithJSON(w, http.StatusNoContent, nil)
+	return 
 }
 
 func (writer *RingBufferWriter) HandlerStopRecording(w http.ResponseWriter, r *http.Request) {
@@ -78,5 +80,10 @@ func (writer *RingBufferWriter) HandlerStopRecording(w http.ResponseWriter, r *h
             	log.Printf("Annotator error: %v", err)
         }
 
-	_ = writer.WriteRecordingToDisk()
+	err = writer.WriteRecordingToDisk()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not write recording to disk", err)
+	}
+	respondWithJSON(w, http.StatusNoContent, nil)
+	return
 }
