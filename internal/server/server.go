@@ -38,7 +38,7 @@ func StartServer(writer *video.RingBufferWriter) {
 	mux := http.NewServeMux()
 
 	mux.Handle("/", http.FileServer(http.Dir(staticFilePath)))
-    //mux.HandleFunc("GET /video_feed", writer.HandlerVideoFeed)
+        mux.HandleFunc("GET /video_feed", writer.HandlerVideoFeed)
 	mux.HandleFunc("POST /start_recording", writer.HandlerStartRecording)
 	mux.HandleFunc("POST /stop_recording", writer.HandlerStopRecording)
 
