@@ -19,63 +19,63 @@ type RingBufferWriter struct {
 	AnnotatorTrigger *Semaphore
 }
 
-func (w *RingBufferWriter) Write(p []byte) (n int, err error) {
+func (writerCfg *RingBufferWriter) Write(p []byte) (n int, err error) {
         for _, b := range p {
-                w.TempBuf = append(w.TempBuf, b)
+                writerCfg.TempBuf = append(writerCfg.TempBuf, b)
 
                 // Detect Start of Image (SOI)
-                if len(w.TempBuf) >= 2 && w.TempBuf[len(w.TempBuf)-2] == 0xFF && w.TempBuf[len(w.TempBuf)-1] == 0xD8 {
-                        if len(w.TempBuf) > 2 {
-                                w.TempBuf = []byte{0xFF, 0xD8} // Reset to sync if we missed an EOI
+                if len(writerCfg.TempBuf) >= 2 && writerCfg.TempBuf[len(writerCfg.TempBuf)-2] == 0xFF && writerCfg.TempBuf[len(writerCfg.TempBuf)-1] == 0xD8 {
+                        if len(writerCfg.TempBuf) > 2 {
+                                writerCfg.TempBuf = []byte{0xFF, 0xD8} // Reset to sync if we missed an EOI
                         }
                 }
 
                 // Detect End of Image (EOI)
-                if len(w.TempBuf) >= 2 && w.TempBuf[len(w.TempBuf)-2] == 0xFF && w.TempBuf[len(w.TempBuf)-1] == 0xD9 {
-                        if len(w.TempBuf) <= constants.SlotSize {
-				blockStart := constants.HeaderSize + (w.WriteIndex * (constants.HeaderSize + constants.SlotSize))
+                if len(writerCfg.TempBuf) >= 2 && writerCfg.TempBuf[len(writerCfg.TempBuf)-2] == 0xFF && writerCfg.TempBuf[len(writerCfg.TempBuf)-1] == 0xD9 {
+                        if len(writerCfg.TempBuf) <= constants.SlotSize {
+				blockStart := constants.HeaderSize + (writerCfg.WriteIndex * (constants.HeaderSize + constants.SlotSize))
 				
-				if w.RecordFlag == true && w.RecordWriteIndex < constants.MaxRecordedFrames {
-					imgLengthBytes := w.Data[blockStart+4 : blockStart+8]
+				if writerCfg.RecordFlag == true && writerCfg.RecordWriteIndex < constants.MaxRecordedFrames {
+					imgLengthBytes := writerCfg.Data[blockStart+4 : blockStart+8]
 					imgLength := binary.LittleEndian.Uint32(imgLengthBytes)
 					imgBlockEnd := blockStart + constants.HeaderSize + int(imgLength)
 
-					recordedBlockStart := w.RecordWriteIndex * (constants.HeaderSize + constants.SlotSize)
+					recordedBlockStart := writerCfg.RecordWriteIndex * (constants.HeaderSize + constants.SlotSize)
 
-					copy(w.RecordedData[recordedBlockStart : ], w.Data[blockStart : imgBlockEnd])
+					copy(writerCfg.RecordedData[recordedBlockStart : ], writerCfg.Data[blockStart : imgBlockEnd])
 
-					w.RecordWriteIndex = w.RecordWriteIndex + 1
+					writerCfg.RecordWriteIndex = writerCfg.RecordWriteIndex + 1
 				}
 
-				copy(w.Data[blockStart + constants.HeaderSize:], w.TempBuf)
+				copy(writerCfg.Data[blockStart + constants.HeaderSize:], writerCfg.TempBuf)
 				
 				// Write the status and length values for the slot
-				w.Data[blockStart] = constants.StatusRaw
-				binary.LittleEndian.PutUint32(w.Data[blockStart+4:], uint32(len(w.TempBuf)))
+				writerCfg.Data[blockStart] = constants.StatusRaw
+				binary.LittleEndian.PutUint32(writerCfg.Data[blockStart+4:], uint32(len(writerCfg.TempBuf)))
 
 				// Clear the 40 bytes of joint Data (starts at byte 8 of the block)
 				for i := 0; i < 40; i++ {
-					w.Data[blockStart+8+i] = 0
+					writerCfg.Data[blockStart+8+i] = 0
 				}
 
                                 // Update current write index (Header byte 0)
-                                w.Data[0] = byte(w.WriteIndex)
+                                writerCfg.Data[0] = byte(writerCfg.WriteIndex)
 
-                                w.WriteIndex = (w.WriteIndex + 1) % constants.NumSlots
+                                writerCfg.WriteIndex = (writerCfg.WriteIndex + 1) % constants.NumSlots
 				
 				// Let annotator know another frame is ready
-				err := w.AnnotatorTrigger.Post()
+				err := writerCfg.AnnotatorTrigger.Post()
 				if err != nil {
 					return len(p), fmt.Errorf("sem_post error: %v", err)
 				}
                         }
-                        w.TempBuf = w.TempBuf[:0]
+                        writerCfg.TempBuf = writerCfg.TempBuf[:0]
                 }
         }
         return len(p), nil
 }
 
-func (writer *RingBufferWriter) WriteRecordingToDisk() error {
+func (writerCfg *RingBufferWriter) WriteRecordingToDisk() error {
         log.Println("Starting to write recording to disk...")
 	cmd := exec.Command("ffmpeg",
 		"-y",                 
@@ -98,15 +98,15 @@ func (writer *RingBufferWriter) WriteRecordingToDisk() error {
 		return err
 	}
 
-	for i := 0; i < writer.RecordWriteIndex; i++ {
+	for i := 0; i < writerCfg.RecordWriteIndex; i++ {
 		blockStart := i * (constants.HeaderSize + constants.SlotSize)
-		imgLengthBytes := writer.RecordedData[blockStart+4 : blockStart+8]
+		imgLengthBytes := writerCfg.RecordedData[blockStart+4 : blockStart+8]
 		imgLength := binary.LittleEndian.Uint32(imgLengthBytes)
 
 		start := blockStart + constants.HeaderSize
 		end := start + int(imgLength)
 		
-		_, err := stdin.Write(writer.RecordedData[start:end])
+		_, err := stdin.Write(writerCfg.RecordedData[start:end])
 		if err != nil {
 			return fmt.Errorf("failed to write frame %d: %v", i, err)
 		}
