@@ -84,6 +84,7 @@ func (apiCfg *ApiCfg) handlerStartRecording(w http.ResponseWriter, r *http.Reque
 	clear(apiCfg.WriterCfg.RecordedData)
 	apiCfg.WriterCfg.RecordWriteIndex = 0
 	apiCfg.WriterCfg.RecordFlag = true
+	log.Println("Video recording started...")
 
 	resp.RespondWithJSON(w, http.StatusNoContent, nil)
 	return
