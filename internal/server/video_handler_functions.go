@@ -19,7 +19,6 @@ func (apiCfg *ApiCfg) handlerVideoFeed(w http.ResponseWriter, r *http.Request) {
 	bearer, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		bearer = r.URL.Query().Get("access_token")
-		log.Printf("token in string is: %s", bearer)
     	}
 	if bearer == "" {
 		resp.RespondWithError(w, http.StatusUnauthorized, "Authentication token missing", err)

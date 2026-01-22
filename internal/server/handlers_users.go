@@ -46,7 +46,6 @@ func (apiCfg *ApiCfg) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		resp.RespondWithError(w, http.StatusBadRequest, "Couldn't create new user", err)
 	}
-	log.Println("successfully created user")
 	
 	resp.RespondWithJSON(w, http.StatusCreated, returnVals{
 		Id: user.ID,

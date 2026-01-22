@@ -59,7 +59,6 @@ func (apiCfg *ApiCfg) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("successfully logged in user with token: %s", accessToken)
 	resp.RespondWithJSON(w, http.StatusOK, returnVals{
 		Id: user.ID,
 		Created_at: user.CreatedAt,
