@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"encoding/json"
 	"time"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/lnix1/lift_judge/internal/auth"

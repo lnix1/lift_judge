@@ -28,7 +28,7 @@
         </div>
 
         <div class="relative max-w-2xl aspect-square bg-black rounded-2xl overflow-hidden shadow-2xl">
-		<form id="lregister-form" method="POST" class="flex flex-col space-y-4 pt-4">
+		<form id="register-form" method="POST" class="flex flex-col space-y-4 pt-4">
     		<div class="grid grid-cols-[auto_1fr] gap-4 items-center">
         		<label for="email" class="text-right">Email:</label>
         		<input type="text" id="email" name="email" autocomplete="email" required class="w-full text-black px-2 py-1 rounded">
@@ -44,13 +44,13 @@
     </main>
 
     <script>
-	const loginForm = document.getElementById('register-form');
+	const registerForm = document.getElementById('register-form');
 
-	loginForm.addEventListener('submit', async (e) => {
+	registerForm.addEventListener('submit', async (e) => {
     		e.preventDefault(); // Stop the browser from submitting the form conventionally
     
-    		const email = loginForm.email.value;
-    		const password = loginForm.password.value;
+    		const email = registerForm.email.value;
+    		const password = registerForm.password.value;
 
     		const response = await fetch('/api/users', {
         		method: 'POST',
@@ -58,9 +58,10 @@
     		});
 
 		if (response.ok) {
-    			const data = await response.json();
-    			localStorage.setItem('liftjudge_token', data.token); 
-    			window.location.href = '/video_feed';
+    			//const data = await response.json();
+			//console.log("created token with value: ", data.token)
+    			//localStorage.setItem('liftjudge_token', data.token); 
+    			window.location.href = '/';
 		} else {
 			window.location.href = '/register.html'
 		}
