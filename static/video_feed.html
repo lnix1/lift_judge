@@ -88,7 +88,9 @@
         </div>
     </main>
 
+    <script src="auth.js"></script>
     <script>
+	
         const menuBtn = document.getElementById('menu-btn');
         const menuDiv = document.getElementById('menu-div');
         const sidebar = document.getElementById('sidebar');
@@ -123,30 +125,22 @@
 		}
             }
         });
-	
 	const playBtn = document.getElementById('play-pause-btn');
 	const playForm = document.getElementById('play-pause-form');
 	const btnPath = document.getElementById('btn-path');
 	const pausePath = "M6.75 5.25a.75.75 0 0 1 .75.75v12a.75.75 0 0 1-1.5 0v-12a.75.75 0 0 1 .75-.75Zm9 0a.75.75 0 0 1 .75.75v12a.75.75 0 0 1-1.5 0v-12a.75.75 0 0 1 .75-.75Z";
 	const playPath = "M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653Z";
-
-	let isPlaying = false;
 	
+	document.addEventListener('DOMContentLoaded', () => {
+		getLiveVideo();
+	});
+	
+	let isPlaying = false;
 	playForm.addEventListener('submit', async () => {
 		event.preventDefault();
-
     		const endpoint = isPlaying ? '/api/stop_recording' : '/api/start_recording';
-
     		try {
-    			const token = localStorage.getItem('liftjudge_token');
-        		await fetch(endpoint, {
-            			method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-        				'Authorization': `Bearer ${token}`
-    				}
-        		});
-
+			isPlaying ? stopRecording() : startRecording();
         		isPlaying = !isPlaying;
 
         		if (isPlaying) {
@@ -156,18 +150,6 @@
         		}
     		} catch (error) {
         		console.error("Failed to communicate with the recording server:", error);
-    		}
-	});
-
-	document.addEventListener('DOMContentLoaded', () => {
-    		const token = localStorage.getItem('liftjudge_token');
-    		const videoElement = document.getElementById('video-feed');
-    
-    		if (token) {
-        		videoElement.src = `/api/video_feed?access_token=${token}`;
-    		} else {
-        		console.error("User not logged in");
-        		window.location.href = "/";
     		}
 	});
 

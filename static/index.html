@@ -59,7 +59,7 @@
 
 		if (response.ok) {
     			const data = await response.json();
-    			localStorage.setItem('liftjudge_token', data.token); 
+    			localStorage.setItem('accessToken', data.token); 
     			window.location.href = '/video_feed.html';
 		} else {
 			window.location.href = '/'

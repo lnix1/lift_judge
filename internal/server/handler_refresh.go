@@ -13,13 +13,13 @@ func (apiCfg *ApiCfg) handlerRefresh(w http.ResponseWriter, r *http.Request) {
 		Token 	string `json:"token"`
 	}
 
-	bearer, err := auth.GetBearerToken(r.Header)
+	cookie, err := r.Cookie("RefreshToken")
 	if err != nil {
 		resp.RespondWithError(w, http.StatusUnauthorized, "No valid refresh token", err)
 		return
 	}
 
-	dbBearer, err := apiCfg.Db.GetRefreshToken(r.Context(), bearer)
+	dbBearer, err := apiCfg.Db.GetRefreshToken(r.Context(), cookie.Value)
 	if err != nil || dbBearer.ExpiredBool == false || dbBearer.RevokeCheck == false {
 		resp.RespondWithError(w, http.StatusUnauthorized, "No valid refresh token", err)
 		return

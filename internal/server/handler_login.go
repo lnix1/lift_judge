@@ -22,7 +22,6 @@ func (apiCfg *ApiCfg) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		Updated_at 	time.Time	`json:"updated_at"`
 		Email 		string		`json:"email"`
 		Token		string		`json:"token"`
-		RefreshToken	string		`json:"refresh_token"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -58,13 +57,21 @@ func (apiCfg *ApiCfg) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	http.SetCookie(w, &http.Cookie{
+    		Name:     "RefreshToken",
+    		Value:    refreshToken,   // the new token string
+    		Path:     "/",
+    		HttpOnly: true,
+    		//Secure:   true,           // if using HTTPS, which you should in prod
+    		SameSite: http.SameSiteStrictMode, // or Lax, depending on your needs
+    		Expires:  time.Now().Add(7 * 24 * time.Hour),
+	})
 	resp.RespondWithJSON(w, http.StatusOK, returnVals{
 		Id: user.ID,
 		Created_at: user.CreatedAt,
 		Updated_at: user.UpdatedAt,
 		Email: user.Email,
 		Token: accessToken,
-		RefreshToken: refreshToken,
 	})
 	return
 }
