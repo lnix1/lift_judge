@@ -89,6 +89,9 @@ async function stopRecording() {
 
 async function getLiveVideo() {
   const refreshed = await tryRefreshTokens();
+  if (!refreshed) {
+    console.error("User not logged in:");
+  }
   const token = getAccessToken();
   const videoElement = document.getElementById("video-feed");
 
