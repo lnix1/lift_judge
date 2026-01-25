@@ -43,7 +43,12 @@
         </div>
     </main>
 
+    <script src="auth.js"></script>
     <script>
+	document.addEventListener('DOMContentLoaded', () => {
+		checkLoggedIn();
+	});
+
 	const loginForm = document.getElementById('login-form');
 
 	loginForm.addEventListener('submit', async (e) => {
@@ -62,7 +67,7 @@
     			localStorage.setItem('accessToken', data.token); 
     			window.location.href = '/video_feed.html';
 		} else {
-			window.location.href = '/'
+			window.location.href = '/';
 		}
 	});
     </script>

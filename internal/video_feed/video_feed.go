@@ -7,6 +7,8 @@ import (
 	"log"
 
 	constants "github.com/lnix1/lift_judge/internal/constants"
+	
+	"github.com/google/uuid"
 )
 
 type RingBufferWriter struct {
@@ -17,6 +19,7 @@ type RingBufferWriter struct {
 	RecordWriteIndex int
 	RecordedData	 []byte
 	AnnotatorTrigger *Semaphore
+	RecordingUser 	 uuid.UUID
 }
 
 func (writerCfg *RingBufferWriter) Write(p []byte) (n int, err error) {

@@ -64,7 +64,7 @@ func (apiCfg *ApiCfg) handlerLogin(w http.ResponseWriter, r *http.Request) {
     		HttpOnly: true,
     		//Secure:   true,           // if using HTTPS, which you should in prod
     		SameSite: http.SameSiteStrictMode, // or Lax, depending on your needs
-    		Expires:  time.Now().Add(7 * 24 * time.Hour),
+    		Expires:  time.Now().Add(1 * time.Hour),
 	})
 	resp.RespondWithJSON(w, http.StatusOK, returnVals{
 		Id: user.ID,

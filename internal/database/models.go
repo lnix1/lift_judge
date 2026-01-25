@@ -27,3 +27,10 @@ type User struct {
 	Email          string
 	HashedPassword string
 }
+
+type Video struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uuid.UUID
+}

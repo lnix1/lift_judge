@@ -75,15 +75,21 @@ func (apiCfg *ApiCfg) handlerStartRecording(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	
-	_, err = auth.ValidateJWT(bearer, apiCfg.Secret)
+	userID, err := auth.ValidateJWT(bearer, apiCfg.Secret)
 	if err != nil {
 		resp.RespondWithError(w, http.StatusUnauthorized, "Invalid authentication token", err)
+		return
+	}
+
+	if apiCfg.WriterCfg.RecordFlag == true && apiCfg.WriterCfg.RecordingUser != userID {
+		resp.RespondWithError(w, http.StatusConflict, "Another User is currently recording", err)
 		return
 	}
 
 	clear(apiCfg.WriterCfg.RecordedData)
 	apiCfg.WriterCfg.RecordWriteIndex = 0
 	apiCfg.WriterCfg.RecordFlag = true
+	apiCfg.WriterCfg.RecordingUser = userID
 	log.Println("Video recording started...")
 
 	resp.RespondWithJSON(w, http.StatusNoContent, nil)
@@ -97,9 +103,19 @@ func (apiCfg *ApiCfg) handlerStopRecording(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	
-	_, err = auth.ValidateJWT(bearer, apiCfg.Secret)
+	userID, err := auth.ValidateJWT(bearer, apiCfg.Secret)
 	if err != nil {
 		resp.RespondWithError(w, http.StatusUnauthorized, "Invalid authentication token", err)
+		return
+	}
+	
+	if apiCfg.WriterCfg.RecordFlag == true && apiCfg.WriterCfg.RecordingUser != userID {
+		resp.RespondWithError(w, http.StatusConflict, "Another User is currently recording", err)
+		return
+	}
+	
+	if apiCfg.WriterCfg.RecordFlag == false{
+		resp.RespondWithError(w, http.StatusConflict, "No recording in progress", err)
 		return
 	}
 

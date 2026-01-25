@@ -83,7 +83,9 @@
         <div class="relative max-w-2xl aspect-square bg-black rounded-2xl overflow-hidden shadow-2xl border border-[#1e1f20] group ring-1 ring-white/10">
             
 	    <div id="video-container">
-    		<img id="video-feed" width="640" height="640" alt="Live Video Feed" style="transform: scaleX(-1);">
+    		<video id="recorded-snippet" width="640" height="640" controls autoplay style="transform: scaleX(-1);">
+        		<source src="/videos/tmp.mp4" type="video/mp4">
+    		</video>
 	    </div>
 
             <div class="absolute bottom-0 left-0 right-0 h-20 flex items-end pb-6 px-6">
@@ -144,50 +146,6 @@
 		}
             }
         });
-	const playBtn = document.getElementById('play-pause-btn');
-	const playForm = document.getElementById('play-pause-form');
-	const btnPath = document.getElementById('btn-path');
-	const pausePath = "M6.75 5.25a.75.75 0 0 1 .75.75v12a.75.75 0 0 1-1.5 0v-12a.75.75 0 0 1 .75-.75Zm9 0a.75.75 0 0 1 .75.75v12a.75.75 0 0 1-1.5 0v-12a.75.75 0 0 1 .75-.75Z";
-	const playPath = "M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653Z";
-	
-	document.addEventListener('DOMContentLoaded', () => {
-		getLiveVideo();
-	});
-	
-	function displayWarning(msg) {
-		const warningBox = document.getElementById('status-warning');
-  		warningBox.textContent = msg;
-  		warningBox.style.display = 'block'; // Reveal the hidden div
-	}
-	let isPlaying = false;
-	playForm.addEventListener('submit', async () => {
-		event.preventDefault();
-    		const endpoint = isPlaying ? '/api/stop_recording' : '/api/start_recording';
-		const warningBox = document.getElementById('status-warning');
-  		const warningText = document.getElementById('warning-text');
-    		try {
-			const res = await (isPlaying ? stopRecording() : startRecording());
-			console.log(res)
-			if (res.ok) {
-        			isPlaying = !isPlaying;
-        			if (isPlaying) {
-            				btnPath.setAttribute('d', pausePath); // Switch to Pause Icon
-        			} else {
-            				btnPath.setAttribute('d', playPath);  // Switch to Play Icon
-					window.location.href = '/view_tmp_recording.html';
-        			}
-				warningBox.classList.add('hidden');
-			}
-			if (res.status === 409) {
-				const data = await res.json();
-				warningText.textContent = data.message || "Someone else is using this feature right now.";
-      				warningBox.classList.remove('hidden'); 
-      				return;
-			}
-    		} catch (error) {
-        		console.error("Failed to communicate with the recording server:", error);
-    		}
-	});
 
     </script>
 </body>

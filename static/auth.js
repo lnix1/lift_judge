@@ -75,6 +75,7 @@ async function startRecording() {
   if (!res.ok) {
     console.error("Failed to start recording", res.status);
   }
+  return res
 }
 
 async function stopRecording() {
@@ -85,6 +86,7 @@ async function stopRecording() {
   if (!res.ok) {
     console.error("Failed to stop recording", res.status);
   }
+  return res
 }
 
 async function getLiveVideo() {
@@ -100,5 +102,17 @@ async function getLiveVideo() {
   } else {
     console.error("User not logged in:");
     window.location.href = "/";
+  }
+}
+
+async function checkLoggedIn() {
+  const refreshed = await tryRefreshTokens();
+  if (!refreshed) {
+    console.error("User not logged in:");
+  }
+  const token = getAccessToken();
+
+  if (token) {
+    window.location.href = "/video_feed.html";
   }
 }
