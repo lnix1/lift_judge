@@ -49,10 +49,13 @@ func (apiCfg *ApiCfg) StartServer() {
 	mux.HandleFunc("GET /api/video_feed", apiCfg.handlerVideoFeed)
 	mux.HandleFunc("POST /api/start_recording", apiCfg.handlerStartRecording)
 	mux.HandleFunc("POST /api/stop_recording", apiCfg.handlerStopRecording)
+	mux.HandleFunc("GET /api/view_tmp", apiCfg.handlerViewTmpRecording)
+	mux.HandleFunc("POST /api/save_tmp", apiCfg.handlerSaveVideo)
 	
 	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)
 	mux.HandleFunc("PUT /api/users", apiCfg.handlerUpdateEmailPassword)
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
+	mux.HandleFunc("GET /api/user/videos", apiCfg.handlerGetSingleUserVideos)
 
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)

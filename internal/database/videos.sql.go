@@ -12,26 +12,44 @@ import (
 )
 
 const createVideo = `-- name: CreateVideo :one
-INSERT INTO videos (id, created_at, updated_at, user_id)
+INSERT INTO videos (id, created_at, updated_at, lift_type, user_id)
 VALUES (
 	gen_random_uuid(),
 	NOW(),
 	NOW(),
-	$1
+	$1,
+	$2
 )
-RETURNING id, created_at, updated_at, user_id
+RETURNING id, created_at, updated_at, user_id, lift_type
 `
 
-func (q *Queries) CreateVideo(ctx context.Context, userID uuid.UUID) (Video, error) {
-	row := q.db.QueryRowContext(ctx, createVideo, userID)
+type CreateVideoParams struct {
+	LiftType string
+	UserID   uuid.UUID
+}
+
+func (q *Queries) CreateVideo(ctx context.Context, arg CreateVideoParams) (Video, error) {
+	row := q.db.QueryRowContext(ctx, createVideo, arg.LiftType, arg.UserID)
 	var i Video
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.UserID,
+		&i.LiftType,
 	)
 	return i, err
+}
+
+const deleteVideoById = `-- name: DeleteVideoById :exec
+DELETE
+FROM videos
+where id = $1
+`
+
+func (q *Queries) DeleteVideoById(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteVideoById, id)
+	return err
 }
 
 const deleteVideos = `-- name: DeleteVideos :exec
@@ -45,9 +63,10 @@ func (q *Queries) DeleteVideos(ctx context.Context) error {
 }
 
 const getSingleUserVideos = `-- name: GetSingleUserVideos :many
-SELECT id, created_at, updated_at, user_id
+SELECT id, created_at, updated_at, user_id, lift_type
 FROM videos
 WHERE user_id = $1
+ORDER BY created_at desc
 `
 
 func (q *Queries) GetSingleUserVideos(ctx context.Context, userID uuid.UUID) ([]Video, error) {
@@ -64,6 +83,7 @@ func (q *Queries) GetSingleUserVideos(ctx context.Context, userID uuid.UUID) ([]
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.UserID,
+			&i.LiftType,
 		); err != nil {
 			return nil, err
 		}
@@ -79,7 +99,7 @@ func (q *Queries) GetSingleUserVideos(ctx context.Context, userID uuid.UUID) ([]
 }
 
 const getVideo = `-- name: GetVideo :one
-SELECT id, created_at, updated_at, user_id
+SELECT id, created_at, updated_at, user_id, lift_type
 FROM videos
 WHERE id = $1
 `
@@ -92,6 +112,7 @@ func (q *Queries) GetVideo(ctx context.Context, id uuid.UUID) (Video, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.UserID,
+		&i.LiftType,
 	)
 	return i, err
 }

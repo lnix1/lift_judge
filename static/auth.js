@@ -116,3 +116,33 @@ async function checkLoggedIn() {
     window.location.href = "/video_feed.html";
   }
 }
+
+async function loadVideoHistory() {
+    const videoListContainer = document.getElementById('video-list');
+
+    try {
+        const response = await authFetch('/api/user/videos');
+        if (!response.ok) throw new Error('Failed to fetch videos');
+        
+        const videos = await response.json();
+
+        videoListContainer.innerHTML = '';
+
+        videos.forEach(video => {
+            const li = document.createElement('li');
+            
+            li.innerHTML = `
+                <a href="/view/${video.id}" class="block px-4 py-2 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/10">
+                    <div class="text-[12px] text-white font-medium">${video.date}</div>
+                    <div class="text-[11px] text-gray-500 uppercase tracking-tight">${video.label}</div>
+                </a>
+            `;
+            
+            videoListContainer.appendChild(li);
+        });
+
+    } catch (error) {
+        console.error("Error loading sidebar:", error);
+        videoListContainer.innerHTML = '<p class="text-[10px] text-red-500">Failed to load lifts.</p>';
+    }
+}

@@ -24,32 +24,14 @@
             </svg>
         </button>
     </div>
+    
     <div id="side-stripe" class="fixed top-12 left-0 h-full w-12 bg-[#1e1f20] z-30 overflow-y-auto"></div>
+    
     <div id="sidebar" class="fixed top-0 left-0 h-full pt-12 w-44 bg-[#1e1f20] transform -translate-x-full transition-transform duration-300 ease-in-out z-40 overflow-y-auto">
-        <div class="p-4">
-            <h3 class="text-[12px] font-semibold">Previous Lifts</h3>
-            
-            <ul id="video-list" class="space-y-2">
-                <li>
-                    <a href="#" class="block px-4 py-1 rounded-lg hover:bg-gray-600 transition-colors border border-transparent hover:border-slate-800">
-                        <div class="text-[12px]">Louis - 01/20/2026 10:00 AM</div>
-                        <div class="text-[12px] text-gray-500">Deadlift</div>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="block px-4 py-1 rounded-lg hover:bg-gray-600 transition-colors border border-transparent hover:border-slate-800">
-                        <div class="text-[12px]">Louis - 01/20/2026 9:00 AM</div>
-                        <div class="text-[12px] text-gray-500">Squat</div>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="block px-4 py-1 rounded-lg hover:bg-gray-600 transition-colors border border-transparent hover:border-slate-800">
-                        <div class="text-[12px]">Louis - 01/20/2026 8:00 AM</div>
-                        <div class="text-[12px] text-gray-500">Bench</div>
-                    </a>
-                </li>
-            </ul>
-        </div>
+    	<div class="p-4">
+        	<h3 class="text-[12px] font-semibold mb-4 uppercase tracking-wider text-gray-400">Previous Lifts</h3>
+		<ol id="video-list" class="space-y-2 list-none"></ol>
+    	</div>
     </div>
 
     <main id="main-content" class="transition-all duration-300 ease-in-out relative pt-0 pb-12 pl-14 px-2 flex flex-col items-center h-screen w-full">
@@ -188,6 +170,8 @@
         		console.error("Failed to communicate with the recording server:", error);
     		}
 	});
+	
+	loadVideoHistory();
 
     </script>
 </body>

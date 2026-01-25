@@ -4,6 +4,7 @@ CREATE TABLE videos (
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL,
 	user_id UUID NOT NULL,
+	lift_type TEXT NOT NULL,
 	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

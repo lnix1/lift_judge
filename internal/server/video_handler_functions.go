@@ -9,10 +9,16 @@ import (
 	"time"
 	"math"
 	"fmt"
+	"path/filepath"
+	"encoding/json"
+	"io"
 	
 	constants "github.com/lnix1/lift_judge/internal/constants"
 	resp "github.com/lnix1/lift_judge/internal/responses"
 	"github.com/lnix1/lift_judge/internal/auth"
+	"github.com/lnix1/lift_judge/internal/database"
+	
+	"github.com/google/uuid"
 )
 
 func (apiCfg *ApiCfg) handlerVideoFeed(w http.ResponseWriter, r *http.Request) {
@@ -143,4 +149,128 @@ func (apiCfg *ApiCfg) handlerStopRecording(w http.ResponseWriter, r *http.Reques
 
 	resp.RespondWithJSON(w, http.StatusNoContent, nil)
 	return
+}
+
+func (apiCfg *ApiCfg) handlerViewTmpRecording(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("RefreshToken")
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "No valid refresh token", err)
+		return
+	}
+
+	dbBearer, err := apiCfg.Db.GetRefreshToken(r.Context(), cookie.Value)
+	if err != nil || dbBearer.ExpiredBool == false || dbBearer.RevokeCheck == false {
+		resp.RespondWithError(w, http.StatusUnauthorized, "No valid refresh token", err)
+		return
+	}
+	
+	if apiCfg.WriterCfg.RecordingUser != dbBearer.UserID {
+		resp.RespondWithError(w, http.StatusConflict, "Another User is currently recording", err)
+		return
+	}
+
+	videoPath := filepath.Join(".", "videos", "tmp.mp4")
+	if _, err := os.Stat(videoPath); os.IsNotExist(err) {
+		http.Error(w, "No recent recording found", http.StatusNotFound)
+		return
+	}
+	http.ServeFile(w, r, videoPath)
+}
+
+func copyFile(src, dst string) error {
+	source, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+
+	bytesCopied, err := io.Copy(destination, source)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Successfully copied %d bytes from %s to %s\n", bytesCopied, src, dst)
+	return nil
+}
+
+
+func (apiCfg *ApiCfg) handlerSaveVideo(w http.ResponseWriter, r *http.Request) {
+	bearer, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "Authentication token missing", err)
+		return
+	}
+	
+	userID, err := auth.ValidateJWT(bearer, apiCfg.Secret)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "Invalid authentication token", err)
+		return
+	}
+
+        type parameters struct {
+		LiftType	string	`json:"lifttype"`
+        }
+        
+	decoder := json.NewDecoder(r.Body)
+        params := parameters{}
+        err = decoder.Decode(&params)
+        if err != nil {
+                resp.RespondWithError(w, http.StatusInternalServerError, "Could not decode parameters", err)
+                return
+        }
+
+	uploadParams := database.CreateVideoParams{params.LiftType, userID}
+
+	videoRecord, err := apiCfg.Db.CreateVideo(r.Context(), uploadParams)
+        if err != nil {
+                resp.RespondWithError(w, http.StatusInternalServerError, "Could not save video", err)
+                return
+        }
+
+	videoPathTmp := filepath.Join(".", "videos", "tmp.mp4")
+	videoPath := filepath.Join(".", "videos", videoRecord.ID.String() + ".mp4")
+	copyFile(videoPathTmp, videoPath)
+
+        resp.RespondWithJSON(w, http.StatusNoContent, nil)
+        return
+}
+
+func (apiCfg *ApiCfg) handlerGetSingleUserVideos(w http.ResponseWriter, r *http.Request) {
+	bearer, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "Authentication token missing", err)
+		return
+	}
+	
+	userID, err := auth.ValidateJWT(bearer, apiCfg.Secret)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "Invalid authentication token", err)
+		return
+	}
+
+	videos, err := apiCfg.Db.GetSingleUserVideos(r.Context(), userID)
+        if err != nil {
+                resp.RespondWithError(w, http.StatusBadRequest, "Failed to get user videos", err)
+                return
+        }
+        
+	type returnVal struct {
+                Id              uuid.UUID       `json:"id"`
+                Date      	time.Time       `json:"date"`
+                Label           string          `json:"label"`
+        }
+
+	returnValList := []returnVal{}
+	for _, video := range videos {
+		returnValList = append(returnValList, returnVal{video.ID, video.CreatedAt, video.LiftType})
+	}
+
+        resp.RespondWithJSON(w, http.StatusOK, returnValList)
+        return
 }
