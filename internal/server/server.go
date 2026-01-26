@@ -56,6 +56,9 @@ func (apiCfg *ApiCfg) StartServer() {
 	mux.HandleFunc("PUT /api/users", apiCfg.handlerUpdateEmailPassword)
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
 	mux.HandleFunc("GET /api/user/videos", apiCfg.handlerGetSingleUserVideos)
+	mux.HandleFunc("GET /api/user/video/{videoID}", apiCfg.handlerGetSingleUserSingleVideo)
+	mux.HandleFunc("/view/", func(w http.ResponseWriter, r *http.Request) {http.ServeFile(w, r, "./static/view.html")})
+	mux.HandleFunc("POST /api/user/video/delete/{videoID}", apiCfg.handlerDeleteSingleUserSingleVideo)
 
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)

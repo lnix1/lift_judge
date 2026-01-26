@@ -140,7 +140,7 @@ func (apiCfg *ApiCfg) handlerStopRecording(w http.ResponseWriter, r *http.Reques
 		fmt.Sprintf("--shmpath=%s", constants.ShmPathRecordingCpp), 
 	)
         cmdAnnotator.Stdout = os.Stdout
-        cmdAnnotator.Stderr = os.Stderr
+        //cmdAnnotator.Stderr = os.Stderr
         if err := cmdAnnotator.Run(); err != nil {
             	log.Printf("Annotator error: %v", err)
         }
@@ -273,4 +273,73 @@ func (apiCfg *ApiCfg) handlerGetSingleUserVideos(w http.ResponseWriter, r *http.
 
         resp.RespondWithJSON(w, http.StatusOK, returnValList)
         return
+}
+
+func (apiCfg *ApiCfg) handlerGetSingleUserSingleVideo(w http.ResponseWriter, r *http.Request) {
+	videoID, err := uuid.Parse(r.PathValue("videoID"))
+	if err != nil {
+		resp.RespondWithError(w, http.StatusBadRequest, "Not a proper video ID", err)
+		return
+	}
+
+	cookie, err := r.Cookie("RefreshToken")
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "No valid refresh token", err)
+		return
+	}
+
+	dbBearer, err := apiCfg.Db.GetRefreshToken(r.Context(), cookie.Value)
+	if err != nil || dbBearer.ExpiredBool == false || dbBearer.RevokeCheck == false {
+		resp.RespondWithError(w, http.StatusUnauthorized, "No valid refresh token", err)
+		return
+	}
+	
+	videoPath := filepath.Join(".", "videos", videoID.String() + ".mp4")
+	if _, err := os.Stat(videoPath); os.IsNotExist(err) {
+		http.Error(w, "No video found with this ID", http.StatusNotFound)
+		return
+	}
+	http.ServeFile(w, r, videoPath)
+	return
+}
+
+func (apiCfg *ApiCfg) handlerDeleteSingleUserSingleVideo(w http.ResponseWriter, r *http.Request) {
+	videoID, err := uuid.Parse(r.PathValue("videoID"))
+	if err != nil {
+		resp.RespondWithError(w, http.StatusBadRequest, "Not a proper video ID", err)
+		return
+	}
+
+	bearer, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "Authentication token missing", err)
+		return
+	}
+	
+	userID, err := auth.ValidateJWT(bearer, apiCfg.Secret)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "Invalid authentication token", err)
+		return
+	}
+	
+	video, err := apiCfg.Db.GetVideo(r.Context(), videoID)
+	if err != nil || video.UserID != userID {
+		resp.RespondWithError(w, http.StatusUnauthorized, "No video with this ID or user not authorized", err)
+		return
+	}
+	
+	err = apiCfg.Db.DeleteVideoById(r.Context(), videoID)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusBadRequest, "Error deleting file from database", err)
+		return
+	}
+
+	videoPath := filepath.Join(".", "videos", videoID.String() + ".mp4")
+	err = os.Remove(videoPath)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusBadRequest, "Error deleting file from disk", err)
+		fmt.Printf("Error deleting file: %v\n", err)
+		return
+	}
+	return
 }

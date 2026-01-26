@@ -121,7 +121,12 @@ async function loadVideoHistory() {
     const videoListContainer = document.getElementById('video-list');
 
     try {
-        const response = await authFetch('/api/user/videos');
+   	const refreshed = await tryRefreshTokens();
+	if (!refreshed) {
+	    console.error("User not logged in:");
+  	}     
+
+	const response = await authFetch('/api/user/videos');
         if (!response.ok) throw new Error('Failed to fetch videos');
         
         const videos = await response.json();
@@ -129,12 +134,27 @@ async function loadVideoHistory() {
         videoListContainer.innerHTML = '';
 
         videos.forEach(video => {
+	    const dateObj = new Date(video.date);
+
+    	    const dateOnly = dateObj.toLocaleDateString(undefined, { 
+        	month: 'short', 
+        	day: 'numeric', 
+        	year: 'numeric' 
+    	    });
+
+	    const timeOnly = dateObj.toLocaleTimeString(undefined, { 
+	        hour: '2-digit', 
+	        minute: '2-digit',
+	        hour12: true 
+	    });
+
             const li = document.createElement('li');
             
             li.innerHTML = `
                 <a href="/view/${video.id}" class="block px-4 py-2 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/10">
-                    <div class="text-[12px] text-white font-medium">${video.date}</div>
-                    <div class="text-[11px] text-gray-500 uppercase tracking-tight">${video.label}</div>
+                    <div class="text-[12px] text-white font-medium">${timeOnly}</div>
+                    <div class="text-[12px] text-white uppercase font-medium">${video.label}</div>
+                    <div class="text-[11px] text-gray-500 tracking-tight">${dateOnly}</div>
                 </a>
             `;
             

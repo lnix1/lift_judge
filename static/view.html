@@ -44,26 +44,17 @@
         <div class="relative max-w-2xl aspect-square bg-black rounded-2xl overflow-hidden shadow-2xl border border-[#1e1f20] group ring-1 ring-white/10">
             
 	    <div id="video-container">
-    		<video id="recorded-snippet" width="640" height="640" controls autoplay>
-        		<source src="/api/view_tmp" type="video/mp4">
+    		<video id="main-player" width="640" height="640" controls autoplay>
     		</video>
 	    </div>
 	</div>
-	
-        <div class="relative max-w-2xl bg-black rounded-2xl">
-			<form id="video-save-form" class="flex flex-col space-y-4 pt-4">
-    			<div class="grid grid-cols-[auto_1fr] gap-4 items-center">
-				<label for="lifttype" class="text-right">Select the lift Type:</label>
-				<select id="lifttype" name="lifttype" required class="text-black px-2 py-1 rounded">
-  					<option value="squat">Squat</option>
-  					<option value="bench">Bench</option>
-  					<option value="deadlift">Deadlift</option>
-				</select>
-    			</div>
-
-    			<button type="submit" class="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded transition">Save Lift</button>
+        
+	<div class="relative max-w-2xl bg-black rounded-2xl">
+			<form id="video-delete-form" class="flex flex-col space-y-4 pt-4">
+    			<button type="submit" class="bg-white/10 hover:bg-red-700 text-white py-2 px-4 rounded transition">Delete Lift</button>
 			</form>
         </div>
+	
 	<div>
     		<a href="/video_feed.html" class="button text-center text-sm text-gray-400 hover:text-white">Record another lift</a>
 	</div>
@@ -108,27 +99,30 @@
             }
         });
 	
-	const videoSaveForm = document.getElementById('video-save-form');
+	loadVideoHistory();
+	
+	const pathParts = window.location.pathname.split('/');
+	const videoId = pathParts[pathParts.length - 1];
+	const player = document.getElementById('main-player');
+	if (videoId) {
+		player.src = `/api/user/video/${videoId}`;
+	} else {
+		console.error("No video ID found in URL");
+	}
+	
+	const videoDeleteForm = document.getElementById('video-delete-form');
 
-	videoSaveForm.addEventListener('submit', async (e) => {
+	videoDeleteForm.addEventListener('submit', async (e) => {
     		e.preventDefault();
     
-    		const lifttype = videoSaveForm.lifttype.value;
-
-    		const response = await authFetch('/api/save_tmp', {
+		const response = await authFetch(`/api/user/video/delete/${videoId}`, {
         		method: 'POST',
-        		body: JSON.stringify({ lifttype })
     		});
 
 		if (response.ok) {
     			window.location.href = '/video_feed.html';
 		}
-		if (response.status === 401) {
-    			window.location.href = '/';
-		}
 	});
-	
-	loadVideoHistory();
 
     </script>
 </body>
