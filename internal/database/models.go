@@ -29,9 +29,10 @@ type User struct {
 }
 
 type Video struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserID    uuid.UUID
-	LiftType  string
+	ID         uuid.UUID
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	UserID     uuid.UUID
+	LiftType   string
+	LiftResult string
 }

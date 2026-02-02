@@ -144,6 +144,26 @@ func (apiCfg *ApiCfg) handlerStopRecording(w http.ResponseWriter, r *http.Reques
         if err := cmdAnnotator.Run(); err != nil {
             	log.Printf("Annotator error: %v", err)
         }
+        
+	type parameters struct {
+		LiftType	string	`json:"lifttype"`
+        }
+        
+	decoder := json.NewDecoder(r.Body)
+        params := parameters{}
+        err = decoder.Decode(&params)
+        if err != nil {
+                resp.RespondWithError(w, http.StatusInternalServerError, "Could not decode parameters", err)
+                return
+        }
+
+	if params.LiftType == "deadlift" {
+		apiCfg.WriterCfg.RecordedLiftResult = apiCfg.judgeDeadlift()
+	}
+	if params.LiftType == "squat" {
+		apiCfg.WriterCfg.RecordedLiftResult = apiCfg.judgeSquat()
+	}
+	apiCfg.WriterCfg.RecordedLiftType = params.LiftType
 
 	_ = apiCfg.WriterCfg.WriteRecordingToDisk()
 
@@ -174,6 +194,8 @@ func (apiCfg *ApiCfg) handlerViewTmpRecording(w http.ResponseWriter, r *http.Req
 		http.Error(w, "No recent recording found", http.StatusNotFound)
 		return
 	}
+
+	w.Header().Set("X-Video-Lift-Result", fmt.Sprintf("%t", apiCfg.WriterCfg.RecordedLiftResult))
 	http.ServeFile(w, r, videoPath)
 }
 
@@ -213,19 +235,7 @@ func (apiCfg *ApiCfg) handlerSaveVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-        type parameters struct {
-		LiftType	string	`json:"lifttype"`
-        }
-        
-	decoder := json.NewDecoder(r.Body)
-        params := parameters{}
-        err = decoder.Decode(&params)
-        if err != nil {
-                resp.RespondWithError(w, http.StatusInternalServerError, "Could not decode parameters", err)
-                return
-        }
-
-	uploadParams := database.CreateVideoParams{params.LiftType, userID}
+	uploadParams := database.CreateVideoParams{apiCfg.WriterCfg.RecordedLiftType, userID, fmt.Sprintf("%t", apiCfg.WriterCfg.RecordedLiftResult),}
 
 	videoRecord, err := apiCfg.Db.CreateVideo(r.Context(), uploadParams)
         if err != nil {
@@ -341,5 +351,62 @@ func (apiCfg *ApiCfg) handlerDeleteSingleUserSingleVideo(w http.ResponseWriter, 
 		fmt.Printf("Error deleting file: %v\n", err)
 		return
 	}
+	return
+}
+
+func (apiCfg *ApiCfg) handlerGetTmpRecordingResult(w http.ResponseWriter, r *http.Request) {
+	bearer, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		bearer = r.URL.Query().Get("access_token")
+    	}
+	if bearer == "" {
+		resp.RespondWithError(w, http.StatusUnauthorized, "Authentication token missing", err)
+		return
+	}
+	
+	_, err = auth.ValidateJWT(bearer, apiCfg.Secret)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "Invalid authentication token", err)
+		return
+	}
+
+	type returnVal struct {
+                Result	bool	`json:"result"`
+        }
+        
+	resp.RespondWithJSON(w, http.StatusOK, returnVal{Result: apiCfg.WriterCfg.RecordedLiftResult})
+	return
+}
+
+func (apiCfg *ApiCfg) handlerGetSingleUserSingleVideoResult(w http.ResponseWriter, r *http.Request) {
+	videoID, err := uuid.Parse(r.PathValue("videoID"))
+	if err != nil {
+		resp.RespondWithError(w, http.StatusBadRequest, "Not a proper video ID", err)
+		return
+	}
+
+	cookie, err := r.Cookie("RefreshToken")
+	if err != nil {
+		resp.RespondWithError(w, http.StatusUnauthorized, "No valid refresh token", err)
+		return
+	}
+
+	dbBearer, err := apiCfg.Db.GetRefreshToken(r.Context(), cookie.Value)
+	if err != nil || dbBearer.ExpiredBool == false || dbBearer.RevokeCheck == false {
+		resp.RespondWithError(w, http.StatusUnauthorized, "No valid refresh token", err)
+		return
+	}
+	
+	video, err := apiCfg.Db.GetVideo(r.Context(), videoID)
+	if err != nil {
+		resp.RespondWithError(w, http.StatusBadRequest, "Error getting file from database", err)
+		return
+	}
+	
+	type returnVal struct {
+                Result	string	`json:"result"`
+        }
+        
+	resp.RespondWithJSON(w, http.StatusOK, returnVal{Result: video.LiftResult})
 	return
 }

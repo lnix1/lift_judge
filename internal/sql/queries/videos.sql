@@ -1,11 +1,12 @@
 -- name: CreateVideo :one
-INSERT INTO videos (id, created_at, updated_at, lift_type, user_id)
+INSERT INTO videos (id, created_at, updated_at, lift_type, user_id, lift_result)
 VALUES (
 	gen_random_uuid(),
 	NOW(),
 	NOW(),
 	$1,
-	$2
+	$2,
+	$3
 )
 RETURNING *;
 

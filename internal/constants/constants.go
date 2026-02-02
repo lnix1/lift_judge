@@ -11,7 +11,6 @@ const (
         ShmPathCpp    = "/camera_ring_buffer"
 	AnnotationTriggerSem = "/camera_frame_sem"
 
-	// Assuming we use max frame rate on R-Pi Camera of 30fps & 640x640 w/ default resolution, this gives max of roughly 500MB of data
 	MaxRecordingSeconds = 30 
 	FramesPerSecond = 30
 	MaxRecordedFrames = MaxRecordingSeconds * FramesPerSecond
@@ -23,4 +22,7 @@ const (
 	StatusRaw        = 1
 	StatusProcessing = 2
 	StatusReady      = 3
+
+	PixelsHeight 	= 640
+	PixelsWidth	= 640
 )

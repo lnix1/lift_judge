@@ -102,7 +102,7 @@ func main() {
 			fmt.Sprintf("--sempath=%s", constants.AnnotationTriggerSem), 
 		)
         	cmdAnnotator.Stdout = os.Stdout
-        	//cmdAnnotator.Stderr = os.Stderr
+        	cmdAnnotator.Stderr = os.Stderr
         	if err := cmdAnnotator.Run(); err != nil {
             		log.Printf("Annotator error: %v", err)
         	}

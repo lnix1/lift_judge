@@ -50,6 +50,9 @@
 	</div>
         
 	<div class="relative max-w-2xl bg-black rounded-2xl">
+		<p id="liftresult"></p>
+        </div>
+	<div class="relative max-w-2xl bg-black rounded-2xl">
 			<form id="video-delete-form" class="flex flex-col space-y-4 pt-4">
     			<button type="submit" class="bg-white/10 hover:bg-red-700 text-white py-2 px-4 rounded transition">Delete Lift</button>
 			</form>
@@ -104,11 +107,28 @@
 	const pathParts = window.location.pathname.split('/');
 	const videoId = pathParts[pathParts.length - 1];
 	const player = document.getElementById('main-player');
-	if (videoId) {
-		player.src = `/api/user/video/${videoId}`;
-	} else {
-		console.error("No video ID found in URL");
-	}
+
+	async function loadLiftResult(videoId) {
+		if (videoId) {
+			player.src = `/api/user/video/${videoId}`;
+			try {
+				const response = await authFetch(`/api/user/video/${videoId}/result`);
+       		 		if (!response.ok) throw new Error('Failed to fetch lift result');
+			        const liftResult = await response.json(); 
+			        console.log(liftResult.result);
+				if (liftResult.result == "true") {
+					document.getElementById('liftresult').innerHTML = `<strong style="color: green;">Depth Hit</strong>`;
+				} else {
+					document.getElementById('liftresult').innerHTML = `<strong style="color: red;">Depth Not Hit</strong>`;
+				}
+			} catch (error) {
+        			console.error("Error loading lift result:", error);
+			}
+		} else {
+			console.error("No video ID found in URL");
+		}
+	};
+	loadLiftResult(videoId);
 	
 	const videoDeleteForm = document.getElementById('video-delete-form');
 

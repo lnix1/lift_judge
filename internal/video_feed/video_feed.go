@@ -12,14 +12,16 @@ import (
 )
 
 type RingBufferWriter struct {
-        Data       	 []byte
-        TempBuf    	 []byte
-        WriteIndex 	 int
-	RecordFlag 	 bool
-	RecordWriteIndex int
-	RecordedData	 []byte
-	AnnotatorTrigger *Semaphore
-	RecordingUser 	 uuid.UUID
+        Data       	 	[]byte
+        TempBuf    	 	[]byte
+        WriteIndex 	 	int
+	RecordFlag 	 	bool
+	RecordWriteIndex 	int
+	RecordedData	 	[]byte
+	AnnotatorTrigger 	*Semaphore
+	RecordingUser 	 	uuid.UUID
+	RecordedLiftResult 	bool
+	RecordedLiftType	string
 }
 
 func (writerCfg *RingBufferWriter) Write(p []byte) (n int, err error) {

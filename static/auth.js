@@ -61,9 +61,6 @@ async function tryRefreshTokens() {
 
 function handleLogout() {
   clearTokens();
-  // Optional: have a logout endpoint that clears the refresh cookie server-side
-  // await fetch("/api/logout", { method: "POST", credentials: "include" });
-
   window.location.href = "/";
 }
 
@@ -79,8 +76,12 @@ async function startRecording() {
 }
 
 async function stopRecording() {
+  const videoSaveForm = document.getElementById('video-save-form');
+  const lifttype = videoSaveForm.lifttype.value;
+  
   const res = await authFetch("/api/stop_recording", {
     method: "POST",
+    body: JSON.stringify({ lifttype })
   });
 
   if (!res.ok) {

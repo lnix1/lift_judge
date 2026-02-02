@@ -12,24 +12,26 @@ import (
 )
 
 const createVideo = `-- name: CreateVideo :one
-INSERT INTO videos (id, created_at, updated_at, lift_type, user_id)
+INSERT INTO videos (id, created_at, updated_at, lift_type, user_id, lift_result)
 VALUES (
 	gen_random_uuid(),
 	NOW(),
 	NOW(),
 	$1,
-	$2
+	$2,
+	$3
 )
-RETURNING id, created_at, updated_at, user_id, lift_type
+RETURNING id, created_at, updated_at, user_id, lift_type, lift_result
 `
 
 type CreateVideoParams struct {
-	LiftType string
-	UserID   uuid.UUID
+	LiftType   string
+	UserID     uuid.UUID
+	LiftResult string
 }
 
 func (q *Queries) CreateVideo(ctx context.Context, arg CreateVideoParams) (Video, error) {
-	row := q.db.QueryRowContext(ctx, createVideo, arg.LiftType, arg.UserID)
+	row := q.db.QueryRowContext(ctx, createVideo, arg.LiftType, arg.UserID, arg.LiftResult)
 	var i Video
 	err := row.Scan(
 		&i.ID,
@@ -37,6 +39,7 @@ func (q *Queries) CreateVideo(ctx context.Context, arg CreateVideoParams) (Video
 		&i.UpdatedAt,
 		&i.UserID,
 		&i.LiftType,
+		&i.LiftResult,
 	)
 	return i, err
 }
@@ -63,7 +66,7 @@ func (q *Queries) DeleteVideos(ctx context.Context) error {
 }
 
 const getSingleUserVideos = `-- name: GetSingleUserVideos :many
-SELECT id, created_at, updated_at, user_id, lift_type
+SELECT id, created_at, updated_at, user_id, lift_type, lift_result
 FROM videos
 WHERE user_id = $1
 ORDER BY created_at desc
@@ -84,6 +87,7 @@ func (q *Queries) GetSingleUserVideos(ctx context.Context, userID uuid.UUID) ([]
 			&i.UpdatedAt,
 			&i.UserID,
 			&i.LiftType,
+			&i.LiftResult,
 		); err != nil {
 			return nil, err
 		}
@@ -99,7 +103,7 @@ func (q *Queries) GetSingleUserVideos(ctx context.Context, userID uuid.UUID) ([]
 }
 
 const getVideo = `-- name: GetVideo :one
-SELECT id, created_at, updated_at, user_id, lift_type
+SELECT id, created_at, updated_at, user_id, lift_type, lift_result
 FROM videos
 WHERE id = $1
 `
@@ -113,6 +117,7 @@ func (q *Queries) GetVideo(ctx context.Context, id uuid.UUID) (Video, error) {
 		&i.UpdatedAt,
 		&i.UserID,
 		&i.LiftType,
+		&i.LiftResult,
 	)
 	return i, err
 }

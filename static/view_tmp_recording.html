@@ -50,18 +50,12 @@
 	    </div>
 	</div>
 	
+	<div class="relative max-w-2xl bg-black rounded-2xl">
+		<p id="liftresult"></p>
+        </div>
         <div class="relative max-w-2xl bg-black rounded-2xl">
 			<form id="video-save-form" class="flex flex-col space-y-4 pt-4">
-    			<div class="grid grid-cols-[auto_1fr] gap-4 items-center">
-				<label for="lifttype" class="text-right">Select the lift Type:</label>
-				<select id="lifttype" name="lifttype" required class="text-black px-2 py-1 rounded">
-  					<option value="squat">Squat</option>
-  					<option value="bench">Bench</option>
-  					<option value="deadlift">Deadlift</option>
-				</select>
-    			</div>
-
-    			<button type="submit" class="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded transition">Save Lift</button>
+    				<button type="submit" class="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded transition">Save Lift</button>
 			</form>
         </div>
 	<div>
@@ -89,6 +83,28 @@
 		menuBtn.classList.add('relative')
 		menuDiv.classList.add('rounded-2xl')
 	}
+	
+	const videoElement = document.querySelector('#recorded-snippet');
+
+	videoElement.addEventListener('loadedmetadata', async (event) => { 
+    		try {
+		        const response = await authFetch('/api/view_tmp/result');
+        
+		        if (!response.ok) {
+		            throw new Error('Failed to fetch temp video lift result');
+		        } else {
+		            const liftResult = await response.json(); 
+		            console.log(liftResult.result);
+			    if (liftResult.result == "true") {
+				document.getElementById('liftresult').innerHTML = `<strong style="color: green;">Depth Hit</strong>`;
+			    } else {
+				document.getElementById('liftresult').innerHTML = `<strong style="color: red;">Depth Not Hit</strong>`;
+			    }
+		        }
+		} catch (error) {
+		        console.error("Error fetching video data:", error);
+		}
+	});
 
         menuBtn.addEventListener('click', () => {
             const isCollapsed = sidebar.classList.contains('-translate-x-full');
@@ -112,12 +128,9 @@
 
 	videoSaveForm.addEventListener('submit', async (e) => {
     		e.preventDefault();
-    
-    		const lifttype = videoSaveForm.lifttype.value;
 
     		const response = await authFetch('/api/save_tmp', {
-        		method: 'POST',
-        		body: JSON.stringify({ lifttype })
+        		method: 'POST'
     		});
 
 		if (response.ok) {
