@@ -163,6 +163,7 @@ func (apiCfg *ApiCfg) handlerStopRecording(w http.ResponseWriter, r *http.Reques
 	if params.LiftType == "squat" {
 		apiCfg.WriterCfg.RecordedLiftResult = apiCfg.judgeSquat()
 	}
+
 	apiCfg.WriterCfg.RecordedLiftType = params.LiftType
 
 	_ = apiCfg.WriterCfg.WriteRecordingToDisk()

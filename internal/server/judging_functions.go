@@ -2,6 +2,7 @@ package server
 
 import (
         "encoding/binary"
+	"log"
 
 	constants "github.com/lnix1/lift_judge/internal/constants"
 )
@@ -13,13 +14,13 @@ func (apiCfg *ApiCfg) judgeSquat() bool {
 
 	completedLift := false
 
-	var minHipKneeDiffLeft uint16 = 1000
-	var maxHipKneeDiffLeft uint16 = 0
+	var minHipKneeDiffLeft int = 1000
+	var maxHipKneeDiffLeft int = 0
 
-	var minHipKneeDiffRight uint16 = 1000
-	var maxHipKneeDiffRight uint16 = 0
+	var minHipKneeDiffRight int = 1000
+	var maxHipKneeDiffRight int = 0
 
-	for i:=0; i < apiCfg.WriterCfg.WriteIndex; i++ {
+	for i:=0; i < apiCfg.WriterCfg.RecordWriteIndex; i++ {
 		blockStart := i * (constants.HeaderSize + constants.SlotSize)
 		jointsStart := blockStart + 8 // double check this?
 		
@@ -32,15 +33,16 @@ func (apiCfg *ApiCfg) judgeSquat() bool {
 			rightKnee_Y := binary.LittleEndian.Uint16(apiCfg.WriterCfg.RecordedData[jointsStart+6 : jointsStart+8])
 			rightHip_Y := binary.LittleEndian.Uint16(apiCfg.WriterCfg.RecordedData[jointsStart+14 : jointsStart+16])
 
-			leftDiff := leftHip_Y - leftKnee_Y
+			leftDiff := int(leftKnee_Y) - int(leftHip_Y)
 			if leftDiff > maxHipKneeDiffLeft {
 				maxHipKneeDiffLeft = leftDiff
 			}
 			if leftDiff < minHipKneeDiffLeft {
 				minHipKneeDiffLeft = leftDiff
 			}
+			log.Printf("left knee: %d, left hip: %d, diff: %d, min diff: %d, max diff: %d", leftKnee_Y, leftHip_Y, leftDiff, minHipKneeDiffLeft, maxHipKneeDiffLeft)
 			
-			rightDiff := rightHip_Y - rightKnee_Y
+			rightDiff := int(rightKnee_Y) - int(rightHip_Y)
 			if rightDiff > maxHipKneeDiffRight {
 				maxHipKneeDiffRight = rightDiff
 			}
@@ -49,7 +51,7 @@ func (apiCfg *ApiCfg) judgeSquat() bool {
 			}
 		}
         }
-	if (float64(minHipKneeDiffLeft) < (float64(maxHipKneeDiffLeft) * 0.05)) && (float64(minHipKneeDiffRight) < (float64(maxHipKneeDiffRight) * 0.05)) {
+	if (float64(minHipKneeDiffLeft) < (float64(maxHipKneeDiffLeft) * 0.1)) && (float64(minHipKneeDiffRight) < (float64(maxHipKneeDiffRight) * 0.05)) {
 		completedLift = true
 	}
 	return completedLift
@@ -72,7 +74,7 @@ func (apiCfg *ApiCfg) judgeDeadlift() bool {
 	maxHipKneeDiffPtrLeft := &maxHipKneeDiffLeft_1
 	maxHipKneeDiffPtrRight := &maxHipKneeDiffRight_1
 
-	for i:=0; i < apiCfg.WriterCfg.WriteIndex; i++ {
+	for i:=0; i < apiCfg.WriterCfg.RecordWriteIndex; i++ {
 		blockStart := i * (constants.HeaderSize + constants.SlotSize)
 		jointsStart := blockStart + 8
 		
@@ -87,16 +89,16 @@ func (apiCfg *ApiCfg) judgeDeadlift() bool {
 			rightHip_Y := binary.LittleEndian.Uint16(apiCfg.WriterCfg.RecordedData[jointsStart+14 : jointsStart+16])
 			rightWrist_Y := binary.LittleEndian.Uint16(apiCfg.WriterCfg.RecordedData[jointsStart+38 : jointsStart+40])
 
-			leftDiffWrist := leftWrist_Y - leftHip_Y
-			rightDiffWrist := rightWrist_Y - rightHip_Y
+			leftDiffWrist := int(leftKnee_Y) - int(leftWrist_Y)
+			rightDiffWrist := int(rightKnee_Y) - int(rightWrist_Y)
 			if isPrePhase == true && leftDiffWrist < 0 && rightDiffWrist < 0 {
 				isPrePhase = false
 				maxHipKneeDiffPtrLeft = &maxHipKneeDiffLeft_2
 				maxHipKneeDiffPtrRight = &maxHipKneeDiffRight_2
 			}
 
-			leftDiffHip := leftHip_Y - leftKnee_Y
-			rightDiffHip := rightHip_Y - rightKnee_Y
+			leftDiffHip := leftKnee_Y - leftHip_Y 
+			rightDiffHip := rightKnee_Y - rightHip_Y
 			
 			if leftDiffHip > *maxHipKneeDiffPtrLeft {
 				*maxHipKneeDiffPtrLeft = leftDiffHip
@@ -106,7 +108,7 @@ func (apiCfg *ApiCfg) judgeDeadlift() bool {
 			}
 		}
         }
-	if (float64(maxHipKneeDiffLeft_2) > (float64(maxHipKneeDiffLeft_2) * 0.95)) && (float64(maxHipKneeDiffRight_2) < (float64(maxHipKneeDiffRight_1) * 0.95)) {
+	if (float64(maxHipKneeDiffLeft_2) > (float64(maxHipKneeDiffLeft_1) * 0.95)) && (float64(maxHipKneeDiffRight_2) > (float64(maxHipKneeDiffRight_1) * 0.95)) {
 		completedLift = true
 	}
 	return completedLift

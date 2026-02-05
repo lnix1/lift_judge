@@ -117,9 +117,9 @@
 			        const liftResult = await response.json(); 
 			        console.log(liftResult.result);
 				if (liftResult.result == "true") {
-					document.getElementById('liftresult').innerHTML = `<strong style="color: green;">Depth Hit</strong>`;
+					document.getElementById('liftresult').innerHTML = `<strong style="color: green;">Lift Good</strong>`;
 				} else {
-					document.getElementById('liftresult').innerHTML = `<strong style="color: red;">Depth Not Hit</strong>`;
+					document.getElementById('liftresult').innerHTML = `<strong style="color: red;">Lift Failed</strong>`;
 				}
 			} catch (error) {
         			console.error("Error loading lift result:", error);
