@@ -23,13 +23,13 @@ I also wanted to challenge myself to get this running on an edge device, specifi
 - Pi AI camera (though I opted not to use the AI deployment functionality of the camera and just used it as a normal camera)
 - M.2 SSD 
 
-The core functionality of the app feeds to frames from the PI camera to a ring buffer, then prods a custom annotator that leverages the MediaPipe Pose Landmarker Lite model to annotate 10 joints. A golang server then trails and serves up the frames. This is optimized where about half the frames are annotated live and this process uses aroun 30% of the Pi's 4 CPU cores.
+The core functionality of the app feeds frames from the PI camera to a ring buffer, then prods a custom annotator that leverages the MediaPipe Pose Landmarker Lite model to annotate 10 joints. A golang server then trails and serves up the frames. This is optimized where about half the frames are annotated live and this process uses around 30% of the Pi's 4 CPU cores.
 
-A user can see a live view to see where their joints are position at lift start. They can then start and stop a recording, at which point any frames that are not annotated live are annotated and a judgment is rendered. The user can then choose to save the lift. Users can also view old lifts and delete lifts. This functionality is offered for recording / judging for both Squat and Deadlift, with custom judging functions for each that use the specific join estimation values.
+A user can see a live view to see where their joints are positioned at lift start. They can then start and stop a recording, at which point any frames that are not annotated live are annotated and a judgment is rendered. The user can then choose to save the lift. Users can also view old lifts and delete lifts. This functionality is offered for recording / judging for both Squat and Deadlift, with custom judging functions for each that use the specific join estimation values.
 
 This is built in such a way that only one user can record at a time (naturally since there is only one camera) but each video is tagged to the recording user's account.
 
-The project has it's own handrolled authentication (using JWT's) and postgress database for storing user login information & saved video links. 
+The project has it's own hand-rolled authentication (using JWT's) and postgres database for storing user login information & saved video links. 
 
 
 
@@ -39,14 +39,14 @@ The whole project is packaged up using Docker, so getting the app up and running
 
 1. Ensure the Pi is at least a 5 and has the camera and SSD.
 2. Ensure you have docker and are logged in via the CLI
-3. Runn the following:
+3. Run the following:
 
 ```
 git clone https://github.com/lnix1/lift_judge.git
 cd lift_judge
 ```
 
-4. Create a ```.env``` file in the project root and fill with the following, specifying the username, password, & secreate string you would like (don't forget to adjust the ```DB_URL``` to use the same username and password as well):
+4. Create a ```.env``` file in the project root and fill with the following, specifying the username, password, & secret string you would like (don't forget to adjust the ```DB_URL``` to use the same username and password as well):
 
 ```
 # Application Settings
@@ -54,7 +54,7 @@ PLATFORM=prod
 SECRET=change_this_to_random_string
 
 # Database Credentials
-DB_USER=postgres
+DB_USER=choose_your_user
 DB_PASS=secure_password
 DB_NAME=liftjudge
 
@@ -76,16 +76,16 @@ Once open, click to create a new account. This requires just an email and passwo
 
 Once created, use the email and password to login. You will be taken to a "video feed" page.
 
-Position the camera about knee or hip height, directly in front of the lift about 10 feet away for optimal performance.
+Position the camera about knee or hip height, directly in front of the lifter about 10 feet away for optimal performance.
 
 Choose the lift in the dropdown, then press the "play" button in the bottom left of the video feed to start recording. Hit the pause button that appears to stop the recording.
 - At this point, the camera will slow for a moment while the recording is further processed and judged. After a few seconds, you will be taken to a page to view your recording with a lift result rendered.
 
 If you want to save the lift, click save. You will then be taken back to the live feed.
 
-You can retrieve and view any saved videos by expanding the burger icon in the top right. Each lift is tagged with the lift type, date and time of recording.
+You can retriev and view any saved videos by expanding the burger icon in the top right. Each lift is tagged with the lift type, date and time of recording.
 
 
 ## Contributing
 
-The app currently uses fairly naive judging formulas and only checks for depth / lockout (i.e. missing double bounces and other violations that would yield redlights for a lifter). I also haven't tackled benchpress yet. If you would like to contribute, please feel free to do so by forking and opening pull requests.
+The app currently uses fairly naive judging formulas and only checks for depth / lockout (i.e. missing double bounces and other violations that would yield red lights for a lifter). I also haven't tackled bench press yet. If you would like to contribute, please feel free to do so by forking and opening pull requests!
