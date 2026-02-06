@@ -2,7 +2,6 @@ package server
 
 import (
         "encoding/binary"
-	"log"
 
 	constants "github.com/lnix1/lift_judge/internal/constants"
 )
@@ -40,7 +39,6 @@ func (apiCfg *ApiCfg) judgeSquat() bool {
 			if leftDiff < minHipKneeDiffLeft {
 				minHipKneeDiffLeft = leftDiff
 			}
-			log.Printf("left knee: %d, left hip: %d, diff: %d, min diff: %d, max diff: %d", leftKnee_Y, leftHip_Y, leftDiff, minHipKneeDiffLeft, maxHipKneeDiffLeft)
 			
 			rightDiff := int(rightKnee_Y) - int(rightHip_Y)
 			if rightDiff > maxHipKneeDiffRight {

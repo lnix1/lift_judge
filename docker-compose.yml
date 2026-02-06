@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    container_name: lift_judge_app
+    restart: always
+    privileged: true
+    shm_size: '1gb'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - /run/udev:/run/udev:ro
+      - /dev/dma_heap:/dev/dma_heap
+      - ./videos:/app/videos
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    networks:
+      - lift_net
+
+  db:
+    image: postgres:15-bookworm
+    container_name: lift_judge_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - lift_net
+
+volumes:
+  postgres_data:
+
+networks:
+  lift_net:

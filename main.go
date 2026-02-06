@@ -60,7 +60,8 @@ func main() {
 		AnnotatorTrigger: annotatorTrigger,
         }
 	
-	godotenv.Load()
+	// for local dev
+	_ = godotenv.Load()
 
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
@@ -119,7 +120,7 @@ func main() {
         )
 
         cmd.Stdout = apiCfg.WriterCfg
-        //cmd.Stderr = os.Stderr
+        cmd.Stderr = os.Stderr
 
         log.Println("Starting camera process...")
         if err := cmd.Run(); err != nil {
