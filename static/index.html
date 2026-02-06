@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lift Judge</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/styles.css" rel="stylesheet">
     <style>
         /* Custom scrollbar for the sidebar */
         .scrollbar-hide::-webkit-scrollbar {
@@ -28,13 +28,13 @@
         </div>
 
         <div class="relative max-w-2xl aspect-square bg-black rounded-2xl overflow-hidden">
-			<form id="login-form" method="POST" class="flex flex-col space-y-4 pt-4">
+			<form id="login-form" method="POST" class="flex flex-col space-y-4 pt-4 px-2">
     			<div class="grid grid-cols-[auto_1fr] gap-4 items-center">
         			<label for="email" class="text-right">Email:</label>
-        			<input type="text" id="email" name="email" autocomplete="email" required class="w-full text-black px-2 py-1 rounded">
+        			<input type="text" id="email" name="email" autocomplete="email" required class="w-full bg-white text-black px-2 py-1 rounded">
 
         			<label for="password" class="text-right">Password:</label>
-        			<input type="password" id="password" name="password" autocomplete="current-password" required class="w-full text-black px-2 py-1 rounded">
+        			<input type="password" id="password" name="password" autocomplete="current-password" required class="w-full bg-white text-black px-2 py-1 rounded">
     			</div>
 
     			<button type="submit" class="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded transition">Login</button>

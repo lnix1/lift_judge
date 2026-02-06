@@ -1,3 +1,4 @@
 models/*
 videos/*
 .env
+node_modules/
