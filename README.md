@@ -1,14 +1,11 @@
 # LiftJudge
 
----
-
 A computer vision app for judging whether powerlifters meet depth on squats or lock out on deadlift.
 
+![Demo gif](LiftJudgeGif.gif)
 
 
 ## Motivation 
-
----
 
 I've spent plenty of time stressing over depth or lockout with teammates when peaking before a powerlifting meet. I wanted a tool to give clear annotation of joint positions & tracking, as well as pixel-level evaluation of a lifter's depth / lockout. 
 
@@ -17,8 +14,6 @@ I also wanted to challenge myself to get this running on an edge device, specifi
 
 
 ## Hardware, App Architecture, User Flow and Benchmarks
-
----
 
 **Hardware:**
 
@@ -39,8 +34,6 @@ The project has it's own handrolled authentication (using JWT's) and postgress d
 
 
 ## Quick Start
-
----
 
 The whole project is packaged up using Docker, so getting the app up and running on a new Pi is quick and easy.
 
@@ -75,8 +68,6 @@ DB_URL=postgres://postgres:secure_password@db:5432/liftjudge?sslmode=disable
 
 ## Usage
 
----
-
 With the app running, open the tool by using a any browser on the same wifi as the Pi to open the URL below:
 
 ```raspberrypi.local:8080/```
@@ -96,7 +87,5 @@ You can retrieve and view any saved videos by expanding the burger icon in the t
 
 
 ## Contributing
-
----
 
 The app currently uses fairly naive judging formulas and only checks for depth / lockout (i.e. missing double bounces and other violations that would yield redlights for a lifter). I also haven't tackled benchpress yet. If you would like to contribute, please feel free to do so by forking and opening pull requests.
